@@ -2,9 +2,16 @@
   {
     "id": 8,
     "date": "2026.01.05",
+    "title": "HOTFIX v1.0.6",
+    "text": "Force update blocking mode",
+    "new": true
+  },
+  {
+    "id": 8,
+    "date": "2026.01.05",
     "title": "HOTFIX v1.0.5",
     "text": "Enable Settings, Fix Avatar Upload interaction",
-    "new": true
+    "new": false
   },
   {
     "id": 7,

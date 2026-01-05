@@ -2,7 +2,7 @@
   "name": "abuze-app",
   "productName": "ABUZE.APP",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "The Ultimate DBD Randomizer & Social Platform",
   "main": "electron/main.js",
   "author": {
@@ -21,6 +21,7 @@
     "appId": "com.abcizee.abuzeapp",
     "npmRebuild": false,
     "productName": "ABUZE.APP",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "copyright": "Copyright © 2026 abcizee",
     "directories": {
       "output": "dist-electron"
