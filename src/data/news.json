@@ -1,5 +1,12 @@
 [
   {
+    "id": 4,
+    "date": "2026.01.06",
+    "title": "HOTFIX v1.0.1",
+    "text": "Fixed black screen issues. Implemented custom borderless window UI. Security protocols updated.",
+    "new": true
+  },
+  {
     "id": 3,
     "date": "2026.01.05",
     "title": "GLOBAL UPDATE v1.2",

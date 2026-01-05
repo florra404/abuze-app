@@ -7,7 +7,7 @@ import newsData from '../../data/news.json';
 
 const Home = () => {
   const navigate = useNavigate();
-  const VERSION = "v1.4.0 SOCIAL";
+  const VERSION = "v1.0.1 STABLE";
   
   const [session, setSession] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);

@@ -2,7 +2,7 @@
   "name": "abuze-app",
   "productName": "ABUZE.APP",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The Ultimate DBD Randomizer & Social Platform",
   "main": "electron/main.js",
   "author": {

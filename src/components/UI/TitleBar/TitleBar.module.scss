@@ -1,0 +1,67 @@
+.titleBar {
+  height: 32px;
+  background: #0a0a0a; // Темный фон шапки
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  border-bottom: 1px solid #222;
+  z-index: 9999;
+}
+
+.dragRegion {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  // МАГИЯ: Позволяет перетаскивать окно за этот блок
+  -webkit-app-region: drag; 
+  padding-left: 10px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  img { width: 16px; height: 16px; }
+  span { 
+    color: #888; 
+    font-size: 12px; 
+    font-family: monospace; 
+    letter-spacing: 2px;
+    font-weight: bold;
+  }
+}
+
+.windowControls {
+  display: flex;
+  height: 100%;
+  // Кнопки перетаскивать нельзя, иначе на них не нажать
+  -webkit-app-region: no-drag; 
+}
+
+.controlBtn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  width: 45px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+  outline: none;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.closeBtn {
+  &:hover {
+    background: #e81123; // Красный при наведении
+  }
+}
