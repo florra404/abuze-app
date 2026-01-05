@@ -1,65 +1,30 @@
 [
   {
-    "id": 8,
+    "id": 4,
     "date": "2026.01.05",
-    "title": "HOTFIX v1.0.6",
-    "text": "Force update blocking mode",
+    "title": "UPDATE v2.0.1",
+    "text": "Leaderboard & News Feed UI",
     "new": true
   },
   {
-    "id": 8,
+    "id": 3,
+    "date": "2026.01.05",
+    "title": "HOTFIX v1.0.6",
+    "text": "Force update blocking mode",
+    "new": false
+  },
+  {
+    "id": 2,
     "date": "2026.01.05",
     "title": "HOTFIX v1.0.5",
     "text": "Enable Settings, Fix Avatar Upload interaction",
     "new": false
   },
   {
-    "id": 7,
+    "id": 1,
     "date": "2026.01.05",
     "title": "UPDATE v1.0.4",
     "text": "Fix update signature, Add settings",
-    "new": false
-  },
-  {
-    "id": 6,
-    "date": "2026.01.05",
-    "title": "UPDATE v1.0.3",
-    "text": "Added new Splash Screen with user recognition. Improved startup sequence animations.",
-    "new": false
-  },
-  {
-    "id": 5,
-    "date": "2026.01.05",
-    "title": "HOTFIX v1.0.2",
-    "text": "Fix assets, Custom Auto-Updater.",
-    "new": false
-  },
-  {
-    "id": 4,
-    "date": "2026.01.05",
-    "title": "HOTFIX v1.0.1",
-    "text": "Fixed black screen issues. Implemented custom borderless window UI. Security protocols updated.",
-    "new": false
-  },
-  {
-    "id": 3,
-    "date": "2026.01.05",
-    "title": "GLOBAL UPDATE v1.2",
-    "text": "Added 38 Killers including The Lich & Dark Lord. New visual engine initialized.",
-    "new": false
-  },
-  {
-    "id": 2,
-    "date": "2026.01.05",
-    "title": "SYSTEM OPTIMIZATION",
-    "text": "Fixed lag spikes during perk randomization. UI updated to Cyber-Horror standard.",
-    "new": false
-  },
-  {
-    "id": 1,
-    "date": "2026.01.05",
-    "title": "PROJECT ABUZE STARTED",
-    "text": "Core systems online. Welcome to the ultimate randomization tool.",
     "new": false
   }
 ]

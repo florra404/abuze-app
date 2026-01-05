@@ -158,14 +158,35 @@ const Profile = () => {
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeChat) return;
+    
     const text = newMessage;
-    setNewMessage(''); // Очищаем сразу для скорости
+    setNewMessage(''); // Сразу очищаем поле
 
-    await supabase.from('messages').insert({
+    // ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ: 
+    // Сразу показываем сообщение в чате, не дожидаясь сервера
+    const tempMessage = {
+      id: Date.now(), // Временный ID
+      sender_id: user.id,
+      receiver_id: activeChat.id,
+      content: text,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, tempMessage]);
+    scrollToBottom();
+
+    // Отправляем в базу
+    const { error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: activeChat.id,
       content: text
     });
+
+    if (error) {
+      console.error("Failed to send:", error);
+      alert("Message failed to send");
+      // Тут можно было бы удалить временное сообщение, но пока оставим так
+    }
   };
 
   // --- STEAM & AVATAR ---
