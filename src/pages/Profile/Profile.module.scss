@@ -1,0 +1,180 @@
+.loading {
+  height: 100vh; display: flex; align-items: center; justify-content: center; color: #666; letter-spacing: 5px; background: #050505;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  background: #050505;
+  color: white;
+  padding: 40px;
+  gap: 30px;
+}
+
+// ЛЕВАЯ КОЛОНКА (Карточка)
+.profileColumn {
+  width: 350px;
+  flex-shrink: 0;
+}
+
+.card {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  
+  // АНИМАЦИИ РАМОК
+  &.frame-basic { border-color: #444; }
+  &.frame-silver { border-color: #c0c0c0; box-shadow: 0 0 10px rgba(192,192,192,0.2); }
+  &.frame-gold { border-color: #ffd700; box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+  &.frame-iridescent { 
+    border-color: #ff00ff; 
+    box-shadow: 0 0 20px rgba(255,0,255,0.4); 
+    background: linear-gradient(180deg, #150015 0%, #111 100%);
+  }
+  &.frame-entity { 
+    border-color: #ff0000; 
+    box-shadow: 0 0 30px rgba(255,0,0,0.6); 
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 20px rgba(167,10,10,0.5); }
+  50% { box-shadow: 0 0 40px rgba(167,10,10,0.9); border-color: #ff3333; }
+  100% { box-shadow: 0 0 20px rgba(167,10,10,0.5); }
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 20px;
+}
+
+.avatar {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+  border: 2px solid #222;
+}
+
+.levelBadge {
+  position: absolute; bottom: 0; right: 0;
+  background: #a70a0a; color: white;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; border: 2px solid #000;
+}
+
+.username {
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
+}
+
+.xpBar {
+  width: 100%; height: 6px; background: #222; border-radius: 3px; margin-bottom: 30px;
+  div { height: 100%; background: #a70a0a; border-radius: 3px; }
+}
+
+.steamBlock {
+  background: #0a0a0a; padding: 15px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #222;
+}
+
+.steamConnect {
+  display: flex; gap: 5px;
+  input { flex: 1; background: #111; border: 1px solid #333; color: white; padding: 5px; font-size: 10px; }
+  button { background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 10px; }
+}
+
+.steamConnected {
+  display: flex; gap: 10px; text-align: left; align-items: center;
+  .steamIcon { font-size: 24px; }
+  .steamLabel { font-size: 8px; color: #666; letter-spacing: 1px; }
+  .steamId { font-size: 10px; font-weight: bold; }
+  .dbdHours { font-size: 10px; color: #00ff00; margin-top: 2px; }
+}
+
+.actions {
+  display: flex; flex-direction: column; gap: 10px;
+  button {
+    background: transparent; border: 1px solid #444; color: #888; padding: 10px; cursor: pointer;
+    &:hover { background: #222; color: white; }
+    &.danger:hover { background: #300; color: #ff5555; border-color: #500; }
+  }
+}
+
+// ПРАВАЯ КОЛОНКА (Социалка)
+.socialColumn {
+  flex: 1; display: flex; flex-direction: column; gap: 20px;
+}
+
+.searchBlock {
+  background: #111; padding: 20px; border-radius: 12px; border: 1px solid #333;
+}
+
+.inputGroup {
+  display: flex; gap: 10px;
+  input { flex: 1; background: #000; border: 1px solid #444; color: white; padding: 10px; }
+  button { background: #a70a0a; color: white; border: none; padding: 0 20px; cursor: pointer; font-weight: bold; }
+}
+
+.foundUser {
+  margin-top: 15px; padding: 10px; background: #1a1a1a; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444;
+  button { background: #00ff00; color: black; border: none; padding: 5px 15px; cursor: pointer; font-weight: bold; font-size: 10px; }
+}
+
+.requestsList {
+  margin-top: 20px; 
+  h3 { font-size: 10px; color: #666; margin-bottom: 10px; }
+}
+
+.requestItem {
+  display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #0a0a0a; border-bottom: 1px solid #222;
+  .reqBtns button { width: 24px; height: 24px; border: none; cursor: pointer; margin-left: 5px; font-weight: bold; }
+  .acc { background: #00ff00; color: black; }
+  .dec { background: #ff0000; color: white; }
+}
+
+.networkBlock {
+  flex: 1; display: flex; gap: 20px; min-height: 0; // Для скролла
+}
+
+.friendsList {
+  width: 200px; background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; overflow-y: auto;
+  h3 { font-size: 10px; color: #666; margin-bottom: 15px; }
+}
+
+.friendItem {
+  display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border-radius: 6px; transition: 0.2s;
+  &:hover { background: #222; }
+  &.active { background: #a70a0a; color: white; .friendStatus { color: white; } }
+  
+  img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #000; }
+  span { font-size: 12px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
+  .friendStatus { font-size: 8px; color: #00ff00; }
+}
+
+.chatWindow {
+  flex: 1; background: #111; border: 1px solid #333; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+}
+
+.chatHeader { padding: 15px; border-bottom: 1px solid #222; font-weight: bold; background: #151515; text-transform: uppercase; }
+
+.messagesArea {
+  flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+}
+
+.message {
+  max-width: 70%; padding: 10px 15px; border-radius: 10px; font-size: 14px; word-wrap: break-word;
+  &.myMsg { align-self: flex-end; background: #a70a0a; color: white; border-bottom-right-radius: 2px; }
+  &.theirMsg { align-self: flex-start; background: #222; color: #ccc; border-bottom-left-radius: 2px; }
+}
+
+.chatInput {
+  padding: 15px; background: #151515; display: flex; gap: 10px;
+  input { flex: 1; background: #000; border: 1px solid #333; color: white; padding: 10px; border-radius: 5px; outline: none; &:focus { border-color: #a70a0a; } }
+  button { background: #a70a0a; color: white; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; border-radius: 5px; }
+}
+
+.emptyChat { flex: 1; display: flex; align-items: center; justify-content: center; color: #444; letter-spacing: 2px; }
