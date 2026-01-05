@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { AnimatePresence } from 'framer-motion'; // Для плавного исчезновения
 
 // Страницы
 import Home from './pages/Home/Home';
@@ -10,30 +11,28 @@ import Login from './pages/Auth/Login';
 import Profile from './pages/Profile/Profile';
 import AccessGate from './pages/Auth/AccessGate';
 
-// UI Компоненты
+// UI
 import TitleBar from './components/UI/TitleBar/TitleBar';
 import UpdateBar from './components/UI/UpdateBar/UpdateBar';
+import SplashScreen from './components/UI/SplashScreen/SplashScreen'; // <-- ИМПОРТ
 
-// Глобальные стили
 import './styles/global.scss';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [accessGranted, setAccessGranted] = useState(false);
+  
+  // Состояние: Показываем ли приветствие?
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // 1. Проверяем, вводил ли юзер Ключ Продукта
     const hasAccess = localStorage.getItem('abuze_access_granted');
     if (hasAccess === 'true') setAccessGranted(true);
 
-    // 2. Проверяем сессию Supabase (вошел ли в аккаунт)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(false);
     });
 
-    // Слушаем изменения входа/выхода
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -41,76 +40,50 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Экран загрузки (пока проверяем ключи)
-  if (loading) {
-    return (
-      <div style={{
-        background:'#050505', 
-        height:'100vh', 
-        display:'flex', 
-        justifyContent:'center', 
-        alignItems:'center', 
-        color:'#666',
-        letterSpacing: '5px'
-      }}>
-        SYSTEM BOOT...
-      </div>
-    );
-  }
+  // Функция, которую вызовет SplashScreen, когда полоска дойдет до 100%
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
 
-  // --- LAYOUT (Обертка) ---
-  // Добавляет шапку и апдейтер на ВСЕ страницы
   const Layout = ({ children }) => (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      
-      {/* 1. Наша черная шапка (вместо Windows рамки) */}
       <TitleBar />
-      
-      {/* 2. Контент страницы */}
       <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
         {children}
-        
-        {/* 3. Виджет обновления (всегда поверх контента внизу) */}
         <UpdateBar />
       </div>
     </div>
   );
 
-  // УРОВЕНЬ 1: Если нет Ключа Доступа -> Показываем Gate
-  if (!accessGranted) {
-    return (
-      <Layout>
-        <Routes>
-           <Route path="*" element={<AccessGate />} />
-        </Routes>
-      </Layout>
-    );
-  }
-
-  // УРОВЕНЬ 2: Если нет Аккаунта -> Показываем Логин
-  if (!session) {
-    return (
-      <Layout>
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </Layout>
-    );
-  }
-
-  // УРОВЕНЬ 3: Полный доступ
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/randomizer" element={<Randomizer />} />
-        <Route path="/builds" element={<Builds />} />
-        <Route path="/profile" element={<Profile />} />
-        
-        {/* Если страница не найдена - кидаем на главную */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Layout>
+    <>
+      {/* ЭКРАН ПРИВЕТСТВИЯ (Поверх всего) */}
+      <AnimatePresence>
+        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      </AnimatePresence>
+
+      {/* ОСНОВНОЕ ПРИЛОЖЕНИЕ (Рендерится сзади, пока идет загрузка) */}
+      <Layout>
+        <Routes>
+          {/* Если ключа нет - Gate */}
+          {!accessGranted && <Route path="*" element={<AccessGate />} />}
+
+          {/* Если ключа есть, но нет аккаунта - Login */}
+          {accessGranted && !session && <Route path="*" element={<Login />} />}
+
+          {/* Полный доступ */}
+          {accessGranted && session && (
+            <>
+              <Route path="/" element={<Home />} />
+              <Route path="/randomizer" element={<Randomizer />} />
+              <Route path="/builds" element={<Builds />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </>
+          )}
+        </Routes>
+      </Layout>
+    </>
   );
 }
 
