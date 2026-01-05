@@ -1,110 +1,96 @@
-.container {
-  display: flex;
-  height: 100vh;
-  background: #050505;
-  color: white;
-  padding: 40px;
-  gap: 40px;
-  overflow: hidden;
+.wrapper {
+  height: 100vh; padding: 30px 50px; display: flex; flex-direction: column;
+  position: relative; z-index: 1;
 }
 
-// 1. МЕНЮ
-.menuColumn {
-  width: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.bgGlow {
+  position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 0, 60, 0.03) 0%, transparent 50%);
+  pointer-events: none; z-index: -1;
 }
 
-.logo {
-  font-size: 48px; margin: 0; letter-spacing: -2px; line-height: 1;
+.red { color: #ff003c; text-shadow: 0 0 10px rgba(255, 0, 60, 0.5); }
+
+/* HEADER */
+.header {
+  display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 50px;
+  border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;
 }
 
-.version {
-  font-family: monospace; color: #444; margin-bottom: 60px;
+.logoBlock h1 { font-size: 42px; margin: 0; letter-spacing: 2px; line-height: 1; font-weight: 900; font-style: italic; }
+.badge { background: #1a1a1a; color: #666; padding: 4px 8px; font-size: 10px; display: inline-block; margin-top: 5px; border: 1px solid #333; }
+
+.profileBtn {
+  display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.3s;
+  &:hover { opacity: 0.8; }
+}
+.pText { text-align: right; }
+.pName { display: block; font-weight: bold; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+.pStatus { font-size: 10px; color: #00ff88; }
+.pAva { width: 45px; height: 45px; border-radius: 50%; overflow: hidden; border: 2px solid #333; img { width: 100%; height: 100%; object-fit: cover;} }
+
+/* GRID */
+.grid {
+  display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px; height: 100%; overflow: hidden;
 }
 
-.menuList {
-  display: flex; flex-direction: column; gap: 20px;
+.sectionTitle {
+  font-size: 14px; color: #555; margin-bottom: 20px; font-family: monospace; letter-spacing: 2px;
 }
 
-.lockedItem {
-  padding: 15px 30px; border: 1px dashed #333; color: #444; font-family: monospace; text-transform: uppercase; cursor: not-allowed;
-}
+/* CARDS (MENU) */
+.cards { display: flex; flex-direction: column; gap: 20px; }
 
-// 2. НОВОСТИ (ЦЕНТР)
-.newsColumn {
-  flex: 1;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.newsCard {
-  background: #111; border: 1px solid #333; padding: 40px; max-width: 500px; width: 100%;
+.card {
+  background: rgba(20, 20, 20, 0.6);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  padding: 25px;
+  display: flex; align-items: center; gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  &::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #a70a0a; }
-  
-  h2 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
-  .date { color: #666; font-size: 12px; margin-top: 5px; font-family: monospace; }
-  .divider { height: 1px; background: #333; margin: 20px 0; }
-  
-  .content {
-    color: #ccc; line-height: 1.6; font-size: 14px;
-    strong { color: #fff; font-family: monospace; }
-  }
-}
-
-// 3. ЛИДЕРБОРД (СПРАВА)
-.rankColumn {
-  width: 300px;
-  background: #0a0a0a; border-left: 1px solid #222;
-  display: flex; flex-direction: column;
-  margin: -40px -40px -40px 0; // Растягиваем на всю высоту
-  padding: 40px 20px;
-}
-
-.rankHeader {
-  font-size: 14px; color: #666; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; text-align: center;
-}
-
-.rankList {
-  overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;
-  
-  /* Скроллбар */
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: #333; }
-}
-
-.rankItem {
-  display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: #111; border: 1px solid #1a1a1a;
-  
-  &.me { border-color: #a70a0a; background: #1a0505; }
-}
-
-.rankNum {
-  font-size: 14px; font-weight: bold; color: #444; width: 25px;
-}
-
-.miniAvatar {
-  width: 35px; height: 35px; border-radius: 50%; overflow: hidden; border: 2px solid #333; flex-shrink: 0;
-  
-  img { width: 100%; height: 100%; object-fit: cover; }
-
-  // Мини-версии рамок (упрощенные стили)
-  &.frame-basic { border-color: #444; }
-  &.frame-silver { border-color: #c0c0c0; }
-  &.frame-gold { border-color: #ffd700; }
-  &.frame-iridescent { border-color: #ff00ff; }
-  &.frame-entity { border-color: #ff0000; }
-}
-
-.rankInfo {
   overflow: hidden;
+
+  /* Эффект скошенного угла */
+  clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
+
+  &:hover {
+    background: rgba(255, 0, 60, 0.1);
+    border-color: #ff003c;
+    transform: translateX(10px);
+    
+    .cardArrow { opacity: 1; transform: translateX(0); }
+    .cardIcon { transform: scale(1.1) rotate(5deg); }
+  }
+
+  &.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); &:hover { transform: none; background: rgba(20,20,20,0.6); border-color: #333; } }
 }
 
-.rankName {
-  font-size: 12px; font-weight: bold; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.cardIcon { font-size: 30px; transition: 0.3s; }
+.cardContent { flex: 1; h3 { margin: 0; font-size: 20px; letter-spacing: 1px; } p { margin: 5px 0 0; color: #888; font-size: 12px; } }
+.cardArrow { font-size: 20px; color: #ff003c; opacity: 0; transform: translateX(-10px); transition: 0.3s; }
+
+.newsMini {
+  margin-top: 40px; padding: 20px; border-left: 2px solid #333; background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
+  .newsHeader { font-size: 10px; color: #666; margin-bottom: 5px; }
+  .newsText { font-size: 12px; color: #ccc; }
 }
 
-.rankLvl {
-  font-size: 10px; color: #a70a0a; font-family: monospace;
+/* RANK TABLE */
+.rankSection { display: flex; flex-direction: column; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 20px; border: 1px solid #222; }
+
+.tableHeader { display: flex; padding: 0 15px 10px; color: #444; font-size: 10px; font-weight: bold; span:nth-child(2) { flex: 1; margin-left: 10px; } }
+
+.rankList { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+
+.rankRow {
+  display: flex; align-items: center; padding: 12px 15px; background: #0f0f0f; border-radius: 6px; border: 1px solid #1a1a1a; transition: 0.2s;
+  &:hover { background: #1a1a1a; border-color: #333; }
+  &.me { border: 1px solid #ff003c; background: rgba(255, 0, 60, 0.05); }
 }
+
+.rNum { font-weight: bold; color: #444; width: 20px; font-size: 12px; }
+.rUser { flex: 1; display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 13px; color: #eee; }
+.rAva { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.rLvl { color: #ff003c; font-weight: bold; font-family: monospace; }

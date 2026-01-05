@@ -1,35 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
-
-// Сброс стандартных стилей
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  user-select: none; // Запрещаем выделять текст (кроме полей ввода)
-}
-
-// Настройка тела приложения
 body {
+  margin: 0;
   background-color: #050505;
-  color: white;
-  font-family: 'Roboto', sans-serif;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden; // ⚠️ ВАЖНО: Убираем скролл с самого окна
+  color: #ffffff;
+  font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
+  overflow: hidden; /* Убираем стандартный скролл */
+
+  /* Сетка на фоне */
+  background-image: 
+    linear-gradient(rgba(20, 20, 20, 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 20, 20, 0.8) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-// Разрешаем выделение текста в полях ввода (логин, поиск)
-input, textarea {
-  user-select: text;
-}
-
-// --- МАГИЯ: ПОЛНОЕ СКРЫТИЕ ПОЛОС ПРОКРУТКИ ---
-// Это скроет белые полосы везде, но прокрутка колесиком останется
+/* Крутой скроллбар для всего приложения */
 ::-webkit-scrollbar {
-  width: 0px;
-  background: transparent;
+  width: 6px;
+  height: 6px;
 }
-
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
 ::-webkit-scrollbar-thumb {
-  background: transparent;
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff003c; /* Красный неон при наведении */
 }

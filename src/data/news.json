@@ -1,5 +1,12 @@
 [
   {
+    "id": 5,
+    "date": "2026.01.05",
+    "title": "UPDATE v2.1.0",
+    "text": "Total UI Overhaul (Cyber-Glass Design)",
+    "new": true
+  },
+  {
     "id": 4,
     "date": "2026.01.05",
     "title": "UPDATE v2.0.1",
