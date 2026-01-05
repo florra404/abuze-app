@@ -1,17 +1,24 @@
 [
   {
+    "id": 5,
+    "date": "2026.01.06",
+    "title": "HOTFIX v1.0.2",
+    "text": "Fix assets, Custom Auto-Updater.",
+    "new": true
+  },
+  {
     "id": 4,
     "date": "2026.01.06",
     "title": "HOTFIX v1.0.1",
     "text": "Fixed black screen issues. Implemented custom borderless window UI. Security protocols updated.",
-    "new": true
+    "new": false
   },
   {
     "id": 3,
     "date": "2026.01.05",
     "title": "GLOBAL UPDATE v1.2",
     "text": "Added 38 Killers including The Lich & Dark Lord. New visual engine initialized.",
-    "new": true
+    "new": false
   },
   {
     "id": 2,

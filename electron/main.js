@@ -1,11 +1,13 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
-
-// Логирование
 const log = require('electron-log');
+
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
+
+// ОТКЛЮЧАЕМ СТАНДАРТНЫЕ ОКНА
+autoUpdater.autoDownload = true; // Пусть качает сам, мы покажем прогресс
 
 let mainWindow;
 
@@ -15,14 +17,13 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    frame: false, // <--- ОТКЛЮЧАЕМ СТАНДАРТНУЮ РАМКУ WINDOWS
-    titleBarStyle: 'hidden', // Скрываем системные кнопки
+    frame: false,
+    titleBarStyle: 'hidden',
     backgroundColor: '#000000',
-    icon: path.join(__dirname, '../public/icon.ico'), // Убедись, что icon.ico есть в public
+    icon: path.join(__dirname, '../public/icon.ico'),
     webPreferences: {
-      nodeIntegration: true, // Включаем, чтобы работало ipcRenderer
-      contextIsolation: false, // Для упрощения работы с кастомным окном
-      // В продакшене лучше использовать preload, но для простоты оставим так
+      nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
@@ -31,43 +32,38 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    autoUpdater.checkForUpdatesAndNotify();
+    // Проверяем обновления тихо
+    autoUpdater.checkForUpdates();
   });
 }
 
-// --- ОБРАБОТЧИКИ КНОПОК КАСТОМНОГО ОКНА ---
-ipcMain.on('app-minimize', () => {
-  mainWindow.minimize();
+// --- ЛОГИКА ОБНОВЛЕНИЯ (Связь с React) ---
+
+// 1. Обновление найдено -> Сообщаем React
+autoUpdater.on('update-available', () => {
+  mainWindow.webContents.send('update_available');
 });
 
-ipcMain.on('app-close', () => {
-  mainWindow.close();
+// 2. Идет скачивание -> Шлем проценты
+autoUpdater.on('download-progress', (progressObj) => {
+  mainWindow.webContents.send('update_progress', progressObj.percent);
 });
+
+// 3. Скачалось -> Готово к установке
+autoUpdater.on('update-downloaded', () => {
+  mainWindow.webContents.send('update_downloaded');
+});
+
+// Обработчик кнопки "Перезапустить" из React
+ipcMain.on('restart_app', () => {
+  autoUpdater.quitAndInstall();
+});
+
+// Кнопки окна
+ipcMain.on('app-minimize', () => mainWindow.minimize());
+ipcMain.on('app-close', () => mainWindow.close());
 
 app.on('ready', createWindow);
-
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-// Авто-обновление (оставляем как было)
-autoUpdater.on('update-available', () => {
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update Available',
-    message: 'Downloading new version...',
-  });
-});
-
-autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    title: 'Update Ready',
-    message: 'Update downloaded. Restart?',
-    buttons: ['Yes', 'Later']
-  }).then((result) => {
-    if (result.response === 0) autoUpdater.quitAndInstall();
-  });
+  if (process.platform !== 'darwin') app.quit();
 });

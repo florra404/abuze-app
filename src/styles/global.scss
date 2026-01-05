@@ -1,12 +1,35 @@
-// src/styles/global.scss
-@import 'variables';
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
 
-body {
+// Сброс стандартных стилей
+* {
   margin: 0;
   padding: 0;
-  background-color: $color-bg-main;
-  color: $color-text-main;
-  font-family: $font-main;
-  overflow: hidden; // Чтобы не было скроллов в приложении
-  user-select: none; // Чтобы текст не выделялся как на сайте
+  box-sizing: border-box;
+  user-select: none; // Запрещаем выделять текст (кроме полей ввода)
+}
+
+// Настройка тела приложения
+body {
+  background-color: #050505;
+  color: white;
+  font-family: 'Roboto', sans-serif;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; // ⚠️ ВАЖНО: Убираем скролл с самого окна
+}
+
+// Разрешаем выделение текста в полях ввода (логин, поиск)
+input, textarea {
+  user-select: text;
+}
+
+// --- МАГИЯ: ПОЛНОЕ СКРЫТИЕ ПОЛОС ПРОКРУТКИ ---
+// Это скроет белые полосы везде, но прокрутка колесиком останется
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
 }
