@@ -1,0 +1,17 @@
+// src/styles/_variables.scss
+
+// Палитра Dead by Daylight
+$color-bg-main: #0b0b0b;       // Почти черный фон
+$color-bg-secondary: #1a1a1a;  // Фон карточек
+$color-dbd-red: #a70a0a;       // Кровавый цвет (для акцентов)
+$color-rarity-ultra: #ac3ee3;  // Цвет иридесцент аддонов
+$color-rarity-rare: #eec25e;   // Золотой
+$color-text-main: #e6e6e6;     // Светло-серый текст
+$color-text-muted: #8c8c8c;    // Приглушенный текст
+
+// Эффекты
+$glow-red: 0 0 15px rgba(167, 10, 10, 0.6);
+$fog-overlay: rgba(20, 20, 20, 0.85);
+
+// Шрифты (подключим позже)
+$font-main: 'Roboto', sans-serif;

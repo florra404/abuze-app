@@ -1,0 +1,241 @@
+@import '../../styles/variables';
+
+.wrapper {
+  height: 100vh;
+  width: 100vw;
+  background-color: #050505;
+  // Темный, стильный фон с красным свечением в углу
+  background-image: 
+    radial-gradient(circle at 80% 20%, rgba(100, 0, 0, 0.15) 0%, transparent 40%),
+    linear-gradient(90deg, #000 0%, #0a0a0a 40%, #050505 100%);
+  
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Roboto', sans-serif; // Или любой другой шрифт
+}
+
+// Левая панель (Меню)
+.sidebar {
+  width: 40%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 80px;
+  position: relative;
+  z-index: 2;
+  
+  // Вертикальная линия декора
+  &::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, #333, transparent);
+  }
+}
+
+.brand {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+  
+  h1 {
+    font-size: 4rem;
+    margin: 0;
+    color: #fff;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+    
+    span { color: $color-dbd-red; }
+  }
+
+  p {
+    margin: 5px 0 0 5px;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+  }
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menuItem {
+  font-size: 3rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #333; // Неактивный цвет (темный)
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  width: fit-content;
+  
+  // Эффект при наведении
+  &:hover {
+    color: #e6e6e6; // Белый цвет
+    padding-left: 20px; // Сдвиг вправо
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      background: $color-dbd-red;
+      box-shadow: 0 0 10px $color-dbd-red;
+    }
+  }
+
+  &.disabled {
+    opacity: 0.3;
+    cursor: default;
+    &:hover { padding-left: 0; color: #333; text-shadow: none; &::before{display: none;} }
+  }
+}
+
+// Нижняя панель с версией
+.footer {
+  position: absolute;
+  bottom: 40px;
+  left: 80px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.versionBadge {
+  background: #111;
+  border: 1px solid #333;
+  color: #666;
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  border-radius: 4px;
+}
+
+.status {
+  color: #00ff00; // Зеленая точка "Online"
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0.5;
+  
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #00ff00;
+  }
+}
+
+// Правая часть (Декор)
+.showcase {
+  flex: 1;
+  position: relative;
+  // Можно добавить сюда картинку маньяка или просто оставить дым
+}
+
+.showcase {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px;
+}
+
+.newsContainer {
+  width: 100%;
+  max-width: 600px;
+  height: 70vh; // Ограниченная высота
+  overflow-y: auto; // Прокрутка если новостей много
+  padding-right: 20px;
+  
+  // Скрываем полосу прокрутки (для красоты)
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+}
+
+.newsHeader {
+  font-size: 1rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.newsItem {
+  background: rgba(20, 20, 20, 0.6); // Полупрозрачный черный
+  border-left: 2px solid #333;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px); // Эффект стекла
+
+  &:hover {
+    background: rgba(30, 30, 30, 0.8);
+    border-left-color: $color-dbd-red; // Красная полоска при наведении
+    transform: translateX(10px);
+  }
+}
+
+.newsMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.date {
+  font-family: monospace;
+  color: #555;
+  font-size: 0.8rem;
+}
+
+.badge {
+  background: $color-dbd-red;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(167, 10, 10, 0.5);
+}
+
+.title {
+  color: #e6e6e6;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.text {
+  color: #999;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}

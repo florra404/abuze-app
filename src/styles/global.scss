@@ -1,0 +1,12 @@
+// src/styles/global.scss
+@import 'variables';
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: $color-bg-main;
+  color: $color-text-main;
+  font-family: $font-main;
+  overflow: hidden; // Чтобы не было скроллов в приложении
+  user-select: none; // Чтобы текст не выделялся как на сайте
+}

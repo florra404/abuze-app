@@ -1,0 +1,76 @@
+{
+  "name": "abuze-app",
+  "productName": "ABUZE.APP",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The Ultimate DBD Randomizer & Social Platform",
+  "main": "electron/main.js",
+  "author": {
+    "name": "abcizee",
+    "email": "your-email@example.com"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "dist": "vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.abcizee.abuzeapp",
+    "npmRebuild": false,
+    "productName": "ABUZE.APP",
+    "copyright": "Copyright © 2026 abcizee",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "florra404",
+        "repo": "abuze-app"
+      }
+    ]
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0",
+    "electron-updater": "^6.6.2",
+    "framer-motion": "^12.23.26",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.11.0",
+    "sass": "^1.97.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.2.4",
+    "wait-on": "^8.0.2"
+  }
+}
