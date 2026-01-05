@@ -3,14 +3,19 @@ const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
+// Настройка логов
+log.transports.file.level = 'debug'; // Пишем всё подробно
 autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = 'info';
 
-// ОТКЛЮЧАЕМ СТАНДАРТНЫЕ ОКНА
-autoUpdater.autoDownload = true; // Пусть качает сам, мы покажем прогресс
+// --- ВАЖНЫЙ ФИКС ДЛЯ 0% ---
+// Отключаем проверку подписи, так как у нас нет платного сертификата
+autoUpdater.verifyUpdateCodeSignature = false; 
+
+// Настройки скачивания
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
 let mainWindow;
-
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,

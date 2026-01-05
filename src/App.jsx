@@ -10,6 +10,7 @@ import Builds from './pages/Builds/Builds';
 import Login from './pages/Auth/Login';
 import Profile from './pages/Profile/Profile';
 import AccessGate from './pages/Auth/AccessGate';
+import Settings from './pages/Settings/Settings';
 
 // UI
 import TitleBar from './components/UI/TitleBar/TitleBar';
@@ -79,6 +80,7 @@ function App() {
               <Route path="/builds" element={<Builds />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="*" element={<Navigate to="/" />} />
+              <Route path="/settings" element={<Settings />} />
             </>
           )}
         </Routes>

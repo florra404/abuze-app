@@ -1,83 +1,88 @@
-.wrapper {
+.overlay {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-  width: 350px;
-  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.content {
-  background: rgba(10, 10, 10, 0.95);
-  border: 1px solid #333;
-  backdrop-filter: blur(10px);
-  padding: 15px;
-  border-left: 3px solid #00ff00; // Зеленый акцент
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.downloading {
-  .text {
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    font-weight: bold;
-    color: #00ff00;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-  }
-  
-  .progressBar {
-    width: 100%;
-    height: 4px;
-    background: #222;
-    border-radius: 2px;
-    overflow: hidden;
-    
-    .fill {
-      height: 100%;
-      background: #00ff00;
-      transition: width 0.2s linear;
-      box-shadow: 0 0 10px #00ff00;
-    }
-  }
-}
-
-.ready {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95); // Почти непрозрачный черный
+  backdrop-filter: blur(20px);
+  z-index: 999999;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-
-  .info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    font-weight: bold;
-    color: white;
-    
-    .successIcon { color: #00ff00; }
-  }
-
-  .btn {
-    background: #00ff00;
-    color: black;
-    border: none;
-    padding: 8px 15px;
-    font-size: 10px;
-    font-weight: 900;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: 0.2s;
-    
-    &:hover {
-      background: white;
-      box-shadow: 0 0 10px white;
-    }
-  }
+  justify-content: center;
+  color: white;
 }
 
-@keyframes slideIn {
-  from { transform: translateY(100px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.container {
+  width: 600px;
+  text-align: center;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin-bottom: 10px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  color: #666;
+  letter-spacing: 5px;
+  font-size: 0.9rem;
+  margin-bottom: 50px;
+}
+
+.progressWrapper {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.progressBar {
+  height: 10px;
+  background: #111;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid #333;
+  margin-bottom: 15px;
+}
+
+.fill {
+  height: 100%;
+  background: #a70a0a; // Кроваво-красный
+  box-shadow: 0 0 20px #a70a0a;
+}
+
+.percentage {
+  font-family: monospace;
+  font-size: 4rem;
+  font-weight: bold;
+  color: #a70a0a;
+  text-shadow: 0 0 30px rgba(167, 10, 10, 0.5);
+}
+
+.statusText {
+  font-family: monospace;
+  color: #444;
+  font-size: 0.8rem;
+  margin-bottom: 40px;
+}
+
+.restartBtn {
+  background: transparent;
+  border: 2px solid #a70a0a;
+  color: white;
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: 0.3s;
+
+  &:hover {
+    background: #a70a0a;
+    box-shadow: 0 0 30px #a70a0a;
+  }
 }
