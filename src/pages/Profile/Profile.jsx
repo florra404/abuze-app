@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import MagicButton from '../../components/UI/MagicButton/MagicButton';
 import { getLevelInfo, getFrameClass } from '../../utils/levelSystem';
-import s from './Profile.module.scss'; // Сейчас создадим стили
+import s from './Profile.module.scss';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -13,12 +13,12 @@ const Profile = () => {
   
   // Социалка
   const [friends, setFriends] = useState([]);
-  const [requests, setRequests] = useState([]); // Входящие заявки
+  const [requests, setRequests] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState(null);
 
   // Чат
-  const [activeChat, setActiveChat] = useState(null); // С кем болтаем
+  const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const chatScrollRef = useRef(null);
@@ -28,22 +28,84 @@ const Profile = () => {
 
   useEffect(() => { init(); }, []);
 
-  // Подписка на новые сообщения в реальном времени
+  // --- 1. БЕЗОПАСНАЯ ЗАГРУЗКА (FIX) ---
+  const init = async () => {
+    try {
+      setLoading(true);
+      
+      // А. Проверяем авторизацию
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Auth error");
+      setUser(user);
+
+      // Б. Грузим мой профиль
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) throw new Error("Profile not found");
+      setProfile(profileData);
+
+      // В. Грузим Друзей (Уже принятые заявки)
+      // Ищем записи, где мы (sender ИЛИ receiver) и статус accepted
+      const { data: friendships, error: friendError } = await supabase
+        .from('friend_requests')
+        .select('*, sender:sender_id(*), receiver:receiver_id(*)')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (!friendError && friendships) {
+        // Если мы отправитель -> друг это receiver. Если мы получатель -> друг это sender.
+        const formattedFriends = friendships.map(f => f.sender_id === user.id ? f.receiver : f.sender);
+        // Фильтруем null (на всякий случай)
+        setFriends(formattedFriends.filter(f => f !== null));
+      }
+
+      // Г. Грузим Входящие заявки
+      const { data: incoming, error: reqError } = await supabase
+        .from('friend_requests')
+        .select('*, sender:sender_id(*)')
+        .eq('receiver_id', user.id)
+        .eq('status', 'pending');
+
+      if (!reqError) setRequests(incoming || []);
+
+    } catch (error) {
+      console.error("INIT ERROR:", error);
+      // Не алерт, чтобы не бесить, просто пишем в консоль
+    } finally {
+      // САМОЕ ВАЖНОЕ: Убираем загрузку в любом случае
+      setLoading(false);
+    }
+  };
+
+  // --- ЧАТ: Подписка на сообщения ---
   useEffect(() => {
-    if (!activeChat) return;
+    if (!activeChat || !user) return;
     
+    // Подписываемся на новые сообщения в БД
     const channel = supabase
       .channel('chat_room')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        if (payload.new.sender_id === activeChat.id || payload.new.sender_id === user.id) {
-          setMessages(prev => [...prev, payload.new]);
+        // Если сообщение относится к нашему чату (от меня или от него)
+        const isRelated = (payload.new.sender_id === activeChat.id && payload.new.receiver_id === user.id) ||
+                          (payload.new.sender_id === user.id && payload.new.receiver_id === activeChat.id);
+        
+        if (isRelated) {
+          // Добавляем в список, если его там еще нет (защита от дублей)
+          setMessages(prev => {
+             if (prev.find(m => m.id === payload.new.id)) return prev;
+             return [...prev, payload.new];
+          });
           scrollToBottom();
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeChat]);
+  }, [activeChat, user]);
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -51,57 +113,30 @@ const Profile = () => {
     }, 100);
   };
 
-  const init = async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return navigate('/login');
-    setUser(user);
-
-    // 1. Мой профиль
-    const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(profileData);
-
-    // 2. Друзья (из таблицы friend_requests со статусом 'accepted')
-    // Это сложный запрос, упростим: ищем где мы sender или receiver и статус accepted
-    const { data: friendships } = await supabase.from('friend_requests')
-      .select('*, sender:sender_id(*), receiver:receiver_id(*)')
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .eq('status', 'accepted');
-
-    const formattedFriends = friendships.map(f => f.sender_id === user.id ? f.receiver : f.sender);
-    setFriends(formattedFriends);
-
-    // 3. Входящие заявки (где мы receiver и статус pending)
-    const { data: incoming } = await supabase.from('friend_requests')
-      .select('*, sender:sender_id(*)')
-      .eq('receiver_id', user.id)
-      .eq('status', 'pending');
-    setRequests(incoming || []);
-
-    setLoading(false);
-  };
-
   // --- ЛОГИКА ДРУЗЕЙ ---
   const sendRequest = async () => {
     if (!searchResult || searchResult.id === user.id) return;
     
-    // Проверяем, нет ли уже связи
+    // Проверяем дубликаты
     const { data: existing } = await supabase.from('friend_requests')
        .select('*')
        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${searchResult.id}),and(sender_id.eq.${searchResult.id},receiver_id.eq.${user.id})`)
        .single();
 
-    if (existing) return alert("Request already sent or you are already friends.");
+    if (existing) return alert("Request already sent or exist.");
 
-    await supabase.from('friend_requests').insert({ sender_id: user.id, receiver_id: searchResult.id });
-    alert("REQUEST SENT");
-    setSearchResult(null);
+    const { error } = await supabase.from('friend_requests').insert({ sender_id: user.id, receiver_id: searchResult.id });
+    if (error) alert("Error sending request");
+    else {
+      alert("REQUEST SENT");
+      setSearchResult(null);
+    }
   };
 
   const acceptRequest = async (reqId, senderProfile) => {
     await supabase.from('friend_requests').update({ status: 'accepted' }).eq('id', reqId);
     setRequests(requests.filter(r => r.id !== reqId));
-    setFriends([...friends, senderProfile]);
+    setFriends(prev => [...prev, senderProfile]);
   };
 
   const declineRequest = async (reqId) => {
@@ -109,10 +144,10 @@ const Profile = () => {
     setRequests(requests.filter(r => r.id !== reqId));
   };
 
-  // --- ЧАТ ---
+  // --- ЧАТ: Функции ---
   const openChat = async (friend) => {
     setActiveChat(friend);
-    // Грузим историю
+    // Грузим историю переписки
     const { data } = await supabase.from('messages')
       .select('*')
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${friend.id}),and(sender_id.eq.${friend.id},receiver_id.eq.${user.id})`)
@@ -122,61 +157,70 @@ const Profile = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !activeChat) return;
+    const text = newMessage;
+    setNewMessage(''); // Очищаем сразу для скорости
+
     await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: activeChat.id,
-      content: newMessage
+      content: text
     });
-    setNewMessage('');
   };
 
-  // --- STEAM ---
- const linkSteam = async () => {
-    if (!steamIdInput) return;
-    
-    // 1. Сначала сохраняем ID как черновик
-    setLoading(true);
-
+  // --- STEAM & AVATAR ---
+  const handleAvatarUpdate = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !profile) return;
     try {
-      // 2. Вызываем нашу облачную функцию
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
+      setProfile({ ...profile, avatar_url: publicUrl });
+    } catch (error) {
+      alert("Upload failed: " + error.message);
+    }
+  };
+
+  const linkSteam = async () => {
+    if (!steamIdInput) return;
+    setLoading(true);
+    try {
+      // Вызываем нашу Edge Function
       const { data, error } = await supabase.functions.invoke('get-steam-stats', {
         body: { steamId: steamIdInput }
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (data?.error) throw new Error(data.error);
 
-      // 3. Если всё ок - получаем реальные часы
-      const realHours = data.hours;
-      alert(`STEAM CONNECTED! DBD HOURS FOUND: ${realHours}`);
-
-      // 4. Сохраняем в базу профиля ID и Часы
-      // (Убедись, что в базе есть колонка dbd_hours, если нет - создай в SQL: alter table profiles add column dbd_hours integer default 0;)
-      
-      const { error: dbError } = await supabase.from('profiles').update({ 
+      const realHours = data.hours || 0;
+      await supabase.from('profiles').update({ 
         steam_id: steamIdInput,
         dbd_hours: realHours 
       }).eq('id', user.id);
 
-      if (dbError) throw dbError;
-
-      // Обновляем локально
       setProfile({ ...profile, steam_id: steamIdInput, dbd_hours: realHours });
-
+      alert(`STEAM LINKED! HOURS: ${realHours}`);
     } catch (err) {
-      alert("FAILED TO LINK STEAM: " + err.message);
-      console.error(err);
+      alert("Steam Link Error: " + err.message);
+      // Фолбек: сохраняем хотя бы ID, если функция упала
+      await supabase.from('profiles').update({ steam_id: steamIdInput }).eq('id', user.id);
+      setProfile({ ...profile, steam_id: steamIdInput });
     } finally {
       setLoading(false);
     }
   };
 
-  // --- УРОВЕНЬ ---
+  // --- RENDERING ---
   const { level, progressPercent } = profile ? getLevelInfo(profile.xp || 0) : { level: 1, progressPercent: 0 };
   const frameClass = getFrameClass(level);
 
   if (loading) return <div className={s.loading}>LOADING SYSTEM...</div>;
+  if (!profile) return <div className={s.loading}>PROFILE ERROR. RESTART APP.</div>;
 
   return (
     <div className={s.container}>
@@ -184,17 +228,20 @@ const Profile = () => {
       {/* ЛЕВАЯ КОЛОНКА: ПРОФИЛЬ */}
       <div className={s.profileColumn}>
         <div className={`${s.card} ${s[frameClass]}`}>
-           {/* АВАТАРКА + РАМКА */}
+           {/* АВАТАРКА */}
            <div className={s.avatarWrapper}>
-             <div className={s.frameEffect}></div> {/* Визуальная рамка */}
-             <img src={profile.avatar_url || 'https://via.placeholder.com/150'} alt="Ava" className={s.avatar} />
-             <div className={s.levelBadge}>{level}</div>
+             <label htmlFor="ava-up" style={{cursor:'pointer'}}>
+                <div className={s.frameEffect}></div>
+                <img src={profile.avatar_url || 'https://via.placeholder.com/150'} alt="Ava" className={s.avatar} />
+                <div className={s.levelBadge}>{level}</div>
+             </label>
+             <input id="ava-up" type="file" style={{display:'none'}} onChange={handleAvatarUpdate} />
            </div>
 
            <h1 className={s.username}>{profile.username}</h1>
            <div className={s.xpBar}><div style={{width: `${progressPercent}%`}}></div></div>
            
-           {/* STEAM BLOCK */}
+           {/* STEAM */}
            <div className={s.steamBlock}>
              {profile.steam_id ? (
                <div className={s.steamConnected}>
@@ -202,8 +249,7 @@ const Profile = () => {
                  <div>
                    <div className={s.steamLabel}>STEAM LINKED</div>
                    <div className={s.steamId}>{profile.steam_id}</div>
-                   {/* Фейковая стата пока нет API */}
-                   <div className={s.dbdHours}>{profile.dbd_hours || 0} HOURS IN FOG</div>
+                   <div className={s.dbdHours}>{profile.dbd_hours || 0} HOURS IN FOG</div> 
                  </div>
                </div>
              ) : (
@@ -224,7 +270,7 @@ const Profile = () => {
       {/* ПРАВАЯ КОЛОНКА: СОЦИАЛКА */}
       <div className={s.socialColumn}>
         
-        {/* ВЕРХ: ПОИСК И ЗАЯВКИ */}
+        {/* ВЕРХ: ПОИСК */}
         <div className={s.searchBlock}>
            <div className={s.inputGroup}>
              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="FIND OPERATIVE..." />
@@ -235,7 +281,6 @@ const Profile = () => {
              }}>SEARCH</button>
            </div>
            
-           {/* Найденный юзер */}
            {searchResult && (
              <div className={s.foundUser}>
                <span>{searchResult.username}</span>
@@ -243,13 +288,12 @@ const Profile = () => {
              </div>
            )}
 
-           {/* Входящие заявки */}
            {requests.length > 0 && (
              <div className={s.requestsList}>
-               <h3>INCOMING TRANSMISSIONS ({requests.length})</h3>
+               <h3>INCOMING ({requests.length})</h3>
                {requests.map(req => (
                  <div key={req.id} className={s.requestItem}>
-                   <span>{req.sender.username}</span>
+                   <span>{req.sender?.username || 'Unknown'}</span>
                    <div className={s.reqBtns}>
                      <button className={s.acc} onClick={() => acceptRequest(req.id, req.sender)}>✓</button>
                      <button className={s.dec} onClick={() => declineRequest(req.id)}>✕</button>
@@ -260,20 +304,19 @@ const Profile = () => {
            )}
         </div>
 
-        {/* НИЗ: СПИСОК ДРУЗЕЙ И ЧАТ */}
+        {/* НИЗ: ДРУЗЬЯ И ЧАТ */}
         <div className={s.networkBlock}>
           <div className={s.friendsList}>
             <h3>NETWORK ({friends.length})</h3>
             {friends.map(f => (
               <div key={f.id} className={`${s.friendItem} ${activeChat?.id === f.id ? s.active : ''}`} onClick={() => openChat(f)}>
                 <div className={s.friendStatus}>●</div>
-                <img src={f.avatar_url} alt="" />
+                <img src={f.avatar_url || 'https://via.placeholder.com/50'} alt="" />
                 <span>{f.username}</span>
               </div>
             ))}
           </div>
 
-          {/* ОКНО ЧАТА */}
           <div className={s.chatWindow}>
             {activeChat ? (
               <>
@@ -299,7 +342,7 @@ const Profile = () => {
                 </div>
               </>
             ) : (
-              <div className={s.emptyChat}>SELECT AN OPERATIVE TO ESTABLISH CONNECTION</div>
+              <div className={s.emptyChat}>SELECT AN OPERATIVE</div>
             )}
           </div>
         </div>
