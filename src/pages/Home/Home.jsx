@@ -7,7 +7,7 @@ import newsData from '../../data/news.json';
 
 const Home = () => {
   const navigate = useNavigate();
-  const VERSION = "v1.0.4 STABLE";
+  const VERSION = "v1.0.5 STABLE";
   
   const [session, setSession] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
@@ -27,7 +27,7 @@ const Home = () => {
   const menuItems = [
     { id: 1, label: "Randomizer", path: '/randomizer', active: true },
     { id: 2, label: "Archives", path: '/builds', active: false },
-    { id: 3, label: "Settings", path: '/settings', active: false },
+    { id: 3, label: "Settings", path: '/settings', active: true },
     { id: 4, label: "Exit", action: () => alert("Use Alt+F4 to exit"), active: true }
   ];
 

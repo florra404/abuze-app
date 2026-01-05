@@ -1,10 +1,17 @@
 [
   {
+    "id": 8,
+    "date": "2026.01.05",
+    "title": "HOTFIX v1.0.5",
+    "text": "Enable Settings, Fix Avatar Upload interaction",
+    "new": true
+  },
+  {
     "id": 7,
     "date": "2026.01.05",
     "title": "UPDATE v1.0.4",
     "text": "Fix update signature, Add settings",
-    "new": true
+    "new": false
   },
   {
     "id": 6,
