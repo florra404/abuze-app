@@ -6,7 +6,7 @@ import { supabase } from '../../supabaseClient';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const VERSION = "v2.0.1"; // Текущая версия (для отображения)
+  const VERSION = "v2.2.0"; // Текущая версия (для отображения)
 
   const handleClearCache = () => {
     localStorage.clear();

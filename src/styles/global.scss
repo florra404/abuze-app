@@ -1,29 +1,44 @@
+:root {
+  --bg-dark: #09090b;
+  --accent: #e11d48; /* Crimson Red */
+  --text-main: #ffffff;
+  --text-dim: #a1a1aa;
+  --glass: rgba(20, 20, 25, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
 body {
   margin: 0;
-  background-color: #050505;
-  color: #ffffff;
-  font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
-  overflow: hidden; /* Убираем стандартный скролл */
-
-  /* Сетка на фоне */
-  background-image: 
-    linear-gradient(rgba(20, 20, 20, 0.8) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 20, 20, 0.8) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
 }
 
-/* Крутой скроллбар для всего приложения */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ЖИВОЙ ТУМАН ЭНТИТИ (ФОН) */
+.entity-fog {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(225, 29, 72, 0.05), transparent 60%),
+    linear-gradient(0deg, #050505 0%, #09090b 100%);
+  z-index: -1;
 }
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
+
+.fog-layer {
+  position: absolute; top: 0; left: 0; width: 200%; height: 200%;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg"); /* Шум для текстуры */
+  opacity: 0.05;
+  animation: moveFog 20s linear infinite;
 }
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
+
+@keyframes moveFog {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-50px, -50px); }
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #ff003c; /* Красный неон при наведении */
-}
+
+/* Скроллбары */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
