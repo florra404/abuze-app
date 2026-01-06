@@ -5,7 +5,7 @@ import { getLevelInfo } from '../../utils/levelSystem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, LogOut, Shield, Gamepad2, Send, 
-  MessageSquare, User, Clock, Zap 
+  MessageSquare, User, Clock, Zap, CheckCircle2 
 } from 'lucide-react';
 import s from './Profile.module.scss';
 
@@ -27,7 +27,6 @@ const Profile = () => {
 
   useEffect(() => { init(); }, []);
 
-  // --- ЛОГИКА (ОСТАВЛЯЕМ КАК БЫЛО, ОНА РАБОТАЕТ) ---
   const init = async () => {
     try {
       setLoading(true);
@@ -38,6 +37,7 @@ const Profile = () => {
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(profileData);
 
+      // Загрузка друзей
       const { data: friendships } = await supabase
         .from('friend_requests')
         .select('*, sender:sender_id(*), receiver:receiver_id(*)')
@@ -51,21 +51,23 @@ const Profile = () => {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  // ЧАТ - Realtime
+  // ЧАТ - REALTIME (ИСПРАВЛЕННЫЙ)
   useEffect(() => {
     if (!activeChat || !user) return;
-    const channel = supabase.channel('chat_room')
+    
+    const channel = supabase.channel(`chat:${activeChat.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        const isRelated = (payload.new.sender_id === activeChat.id && payload.new.receiver_id === user.id) ||
-                          (payload.new.sender_id === user.id && payload.new.receiver_id === activeChat.id);
+        // ФИКС ДУБЛИКАТОВ: Если сообщение от меня — игнорируем, мы его уже добавили локально
+        if (payload.new.sender_id === user.id) return;
+
+        const isRelated = (payload.new.sender_id === activeChat.id && payload.new.receiver_id === user.id);
+        
         if (isRelated) {
-          setMessages(prev => {
-             if (prev.find(m => m.id === payload.new.id)) return prev;
-             return [...prev, payload.new];
-          });
+          setMessages(prev => [...prev, payload.new]);
           scrollToBottom();
         }
       }).subscribe();
+
     return () => { supabase.removeChannel(channel); };
   }, [activeChat, user]);
 
@@ -85,8 +87,12 @@ const Profile = () => {
     if (!newMessage.trim() || !activeChat) return;
     const text = newMessage;
     setNewMessage(''); 
-    setMessages(prev => [...prev, { id: Date.now(), sender_id: user.id, receiver_id: activeChat.id, content: text }]);
+
+    // Оптимистичное добавление
+    const tempMsg = { id: Date.now(), sender_id: user.id, receiver_id: activeChat.id, content: text };
+    setMessages(prev => [...prev, tempMsg]);
     scrollToBottom();
+
     await supabase.from('messages').insert({ sender_id: user.id, receiver_id: activeChat.id, content: text });
   };
 
@@ -94,12 +100,18 @@ const Profile = () => {
     const file = e.target.files[0];
     if (!file || !profile) return;
     try {
-      const fileName = `${profile.id}-${Date.now()}.${file.name.split('.').pop()}`;
-      await supabase.storage.from('avatars').upload(fileName, file);
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
-      setProfile({ ...profile, avatar_url: publicUrl });
-    } catch (e) { alert("Upload failed"); }
+      // Имя файла только латиница
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
+      
+      const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+      if (error) throw error;
+      
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      
+      await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', profile.id);
+      setProfile({ ...profile, avatar_url: data.publicUrl });
+    } catch (e) { alert("Upload error: " + e.message); }
   };
 
   const linkSteam = async () => {
@@ -108,82 +120,63 @@ const Profile = () => {
     setProfile({ ...profile, steam_id: steamIdInput });
   };
 
-  // --- RENDER ---
-  const { level, progressPercent } = profile ? getLevelInfo(profile.xp || 0) : { level: 1, progressPercent: 0 };
+  if (loading) return <div className={s.loading}>LOADING DOSSIER...</div>;
 
-  if (loading) return <div className={s.loading}>INITIALIZING...</div>;
+  const { level, progressPercent } = profile ? getLevelInfo(profile.xp || 0) : { level: 1, progressPercent: 0 };
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <div className={s.page}>
-      {/* ФОН */}
       <div className="entity-fog"><div className="fog-layer"></div></div>
 
-      {/* НАВИГАЦИЯ */}
-      <motion.button 
-        whileHover={{ x: -5 }} 
-        className={s.backBtn} 
-        onClick={() => navigate('/')}
-      >
-        <ArrowLeft /> BACK TO HUB
+      <motion.button whileHover={{ x: -5 }} className={s.backBtn} onClick={() => navigate('/')}>
+        <ArrowLeft /> RETURN TO BASE
       </motion.button>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        className={s.content}
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={s.content}>
         
-        {/* ЛЕВАЯ ПАНЕЛЬ: ДОСЬЕ */}
+        {/* ЛЕВАЯ ПАНЕЛЬ */}
         <div className={s.leftPanel}>
-          <div className={s.idCard}>
+          <div className={`${s.idCard} ${level >= 100 ? 'frame-entity' : ''}`}>
             <div className={s.cardHeader}>
-              <Shield size={14} /> OPERATIVE DOSSIER
+              <Shield size={14} className={s.accent}/> OPERATIVE ID: {profile.id.slice(0,8)}
             </div>
             
-            {/* Аватар */}
             <div className={s.avatarSection}>
               <motion.div whileHover={{ scale: 1.05 }} className={s.avatarWrapper}>
                 <img src={profile.avatar_url || 'https://via.placeholder.com/150'} alt="" />
-                <input type="file" onChange={handleAvatarUpdate} title="Upload New Avatar" />
-                <div className={s.roleBadge} data-role={profile.role}>{profile.role || 'AGENT'}</div>
+                <input type="file" onChange={handleAvatarUpdate} />
+                {isAdmin && <div className={s.adminBadge}>ADMIN</div>}
               </motion.div>
             </div>
 
-            <h2 className={s.username}>{profile.username}</h2>
+            <h2 className={`${s.username} ${isAdmin ? 'admin-glow' : ''}`}>
+              {profile.username}
+              {profile.is_verified && <CheckCircle2 size={16} className={s.accent} style={{marginLeft:5}}/>}
+            </h2>
             
-            {/* Статистика */}
             <div className={s.statsGrid}>
               <div className={s.statBox}>
-                <div className={s.statLabel}><Zap size={10}/> LEVEL</div>
+                <div className={s.statLabel}><Zap size={12}/> LEVEL</div>
                 <div className={s.statVal}>{level}</div>
               </div>
               <div className={s.statBox}>
-                <div className={s.statLabel}><Clock size={10}/> HOURS</div>
+                <div className={s.statLabel}><Clock size={12}/> HOURS</div>
                 <div className={s.statVal}>{profile.dbd_hours || 0}</div>
               </div>
             </div>
 
-            {/* Прогресс XP */}
             <div className={s.xpSection}>
-              <div className={s.xpHeader}>
-                <span>XP PROGRESS</span>
-                <span>{profile.xp} XP</span>
-              </div>
+              <div className={s.xpHeader}><span>XP PROGRESS</span><span>{profile.xp} XP</span></div>
               <div className={s.xpTrack}>
-                <motion.div 
-                  initial={{ width: 0 }} 
-                  animate={{ width: `${progressPercent}%` }} 
-                  className={s.xpFill} 
-                />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} className={s.xpFill} />
               </div>
             </div>
 
-            {/* Steam Link */}
             <div className={s.steamBlock}>
               {profile.steam_id ? (
                 <div className={s.steamActive}>
-                  <Gamepad2 size={16} /> STEAM LINKED
-                  <span className={s.sid}>{profile.steam_id}</span>
+                  <Gamepad2 size={16} /> STEAM LINKED: <span className={s.sid}>{profile.steam_id}</span>
                 </div>
               ) : (
                 <div className={s.steamForm}>
@@ -194,26 +187,20 @@ const Profile = () => {
             </div>
 
             <button className={s.logoutBtn} onClick={() => supabase.auth.signOut().then(() => navigate('/'))}>
-              <LogOut size={16} /> TERMINATE SESSION
+              <LogOut size={16} /> LOGOUT
             </button>
           </div>
         </div>
 
-        {/* ПРАВАЯ ПАНЕЛЬ: СЕКРЕТНЫЙ ЧАТ */}
+        {/* ПРАВАЯ ПАНЕЛЬ (ЧАТ) */}
         <div className={s.rightPanel}>
           <div className={s.chatInterface}>
-            
-            {/* Верх: Друзья */}
             <div className={s.friendsBar}>
-              {friends.length === 0 && <span className={s.noFriends}>No active agents found.</span>}
+              {friends.length === 0 && <span className={s.noFriends}>No connections.</span>}
               {friends.map(f => (
                 <motion.div 
-                  key={f.id}
-                  whileHover={{ scale: 1.1, borderColor: '#e11d48' }}
-                  whileTap={{ scale: 0.95 }}
+                  key={f.id} whileHover={{ scale: 1.1 }} onClick={() => openChat(f)}
                   className={`${s.friendBubble} ${activeChat?.id === f.id ? s.activeBubble : ''}`}
-                  onClick={() => openChat(f)}
-                  title={f.username}
                 >
                   <img src={f.avatar_url} alt="" />
                   <div className={s.statusDot} />
@@ -221,34 +208,27 @@ const Profile = () => {
               ))}
             </div>
 
-            {/* Центр: Сообщения */}
             <div className={s.chatArea}>
               {activeChat ? (
                 <>
                   <div className={s.chatHeader}>
-                     SECURE CONNECTION: <span className={s.accent}>{activeChat.username}</span>
+                     ENCRYPTED: <span className={s.accent}>{activeChat.username}</span>
                   </div>
                   <div className={s.messagesList}>
-                    <AnimatePresence>
-                      {messages.map((m) => (
-                        <motion.div 
-                          key={m.id} 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`${s.msg} ${m.sender_id === user.id ? s.mine : s.theirs}`}
-                        >
-                          {m.content}
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                    {messages.map((m, i) => (
+                      <motion.div 
+                        key={i} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                        className={`${s.msg} ${m.sender_id === user.id ? s.mine : s.theirs}`}
+                      >
+                        {m.content}
+                      </motion.div>
+                    ))}
                     <div ref={chatScrollRef} />
                   </div>
                   <div className={s.inputZone}>
                     <input 
-                      value={newMessage} 
-                      onChange={e => setNewMessage(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                      placeholder="Type encrypted message..." 
+                      value={newMessage} onChange={e => setNewMessage(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && sendMessage()} placeholder="Message..." 
                     />
                     <button onClick={sendMessage}><Send size={18} /></button>
                   </div>
@@ -256,11 +236,10 @@ const Profile = () => {
               ) : (
                 <div className={s.emptyState}>
                   <MessageSquare size={48} opacity={0.2} />
-                  <p>SELECT AGENT FREQUENCY</p>
+                  <p>SELECT AGENT</p>
                 </div>
               )}
             </div>
-
           </div>
         </div>
 

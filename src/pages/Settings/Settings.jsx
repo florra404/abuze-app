@@ -1,75 +1,127 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MagicButton from '../../components/UI/MagicButton/MagicButton';
-// Можно использовать те же стили, что и в Profile, или создать простые inline
-import { supabase } from '../../supabaseClient';
+import { motion } from 'framer-motion';
+import { Globe, Monitor, Shield, ArrowLeft, Trash2, Cpu, Volume2 } from 'lucide-react';
+import s from './Settings.module.scss';
+
+// Словарь переводов
+const TRANSLATIONS = {
+  en: {
+    title: "SYSTEM SETTINGS",
+    lang: "Interface Language",
+    streamer: "Streamer Mode",
+    streamerDesc: "Hide sensitive ID data",
+    hw: "Hardware Acceleration",
+    hwDesc: "Use GPU for visual effects",
+    clear: "Clear Cache",
+    clearDesc: "Free up local storage space",
+    back: "BACK TO HUB"
+  },
+  ru: {
+    title: "НАСТРОЙКИ СИСТЕМЫ",
+    lang: "Язык интерфейса",
+    streamer: "Режим Стримера",
+    streamerDesc: "Скрывать личные ID и почту",
+    hw: "Аппаратное ускорение",
+    hwDesc: "Использовать GPU для эффектов",
+    clear: "Очистить Кеш",
+    clearDesc: "Освободить локальное хранилище",
+    back: "НАЗАД В ХАБ"
+  }
+};
 
 const Settings = () => {
   const navigate = useNavigate();
-  const VERSION = "v2.2.0"; // Текущая версия (для отображения)
+  
+  // Состояние настроек (грузим из localStorage)
+  const [lang, setLang] = useState(localStorage.getItem('app_lang') || 'en');
+  const [streamerMode, setStreamerMode] = useState(localStorage.getItem('streamer_mode') === 'true');
+  const [hwAccel, setHwAccel] = useState(true);
 
-  const handleClearCache = () => {
-    localStorage.clear();
-    alert("SYSTEM CACHE CLEARED. RESTARTING...");
-    window.location.reload();
+  const t = TRANSLATIONS[lang];
+
+  const toggleLang = (l) => {
+    setLang(l);
+    localStorage.setItem('app_lang', l);
+    // В реальном большом приложении здесь был бы Context, но пока просто релоад для применения
+    // window.location.reload(); // Можно раскомментировать, если хотим жесткого обновления
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+  const toggleStreamer = () => {
+    setStreamerMode(!streamerMode);
+    localStorage.setItem('streamer_mode', !streamerMode);
   };
 
   return (
-    <div style={{ padding: '50px', height: '100%', background: '#050505', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      
-      {/* Кнопка Назад */}
-      <button onClick={() => navigate('/')} style={{position:'absolute', top:30, left:30, background:'transparent', border:'none', color:'#666', cursor:'pointer'}}>← BACK</button>
+    <div className={s.page}>
+       <div className="entity-fog"><div className="fog-layer"></div></div>
 
-      <h1 style={{ fontSize: '3rem', marginBottom: '50px', letterSpacing: '5px', color: '#fff' }}>SETTINGS</h1>
+       <motion.button whileHover={{ x: -5 }} className={s.backBtn} onClick={() => navigate('/')}>
+        <ArrowLeft /> {t.back}
+      </motion.button>
 
-      <div style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        
-        {/* Блок 1: Приложение */}
-        <div style={{ background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333' }}>
-          <h3 style={{ color: '#666', marginBottom: '20px', textTransform: 'uppercase', fontSize: '12px' }}>Application</h3>
+      <div className={s.container}>
+        <h1 className={s.title}>{t.title}</h1>
+
+        <div className={s.grid}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-             <span>Current Version</span>
-             <span style={{ color: '#a70a0a', fontWeight: 'bold' }}>{VERSION}</span>
-          </div>
+          {/* ЯЗЫК */}
+          <section className={s.section}>
+            <div className={s.secHeader}><Globe size={20} className={s.icon}/> {t.lang}</div>
+            <div className={s.langSwitcher}>
+              <button 
+                className={`${s.langBtn} ${lang === 'en' ? s.active : ''}`}
+                onClick={() => toggleLang('en')}
+              >
+                ENGLISH
+              </button>
+              <button 
+                className={`${s.langBtn} ${lang === 'ru' ? s.active : ''}`}
+                onClick={() => toggleLang('ru')}
+              >
+                РУССКИЙ
+              </button>
+            </div>
+          </section>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-             <span>Auto-Updates</span>
-             <span style={{ color: '#00ff00' }}>ACTIVE ●</span>
-          </div>
+          {/* ПРИВАТНОСТЬ */}
+          <section className={s.section}>
+            <div className={s.secHeader}><Shield size={20} className={s.icon}/> {t.streamer}</div>
+            <div className={s.row}>
+              <p>{t.streamerDesc}</p>
+              <Switch checked={streamerMode} onChange={toggleStreamer} />
+            </div>
+          </section>
+
+          {/* СИСТЕМА */}
+          <section className={s.section}>
+            <div className={s.secHeader}><Cpu size={20} className={s.icon}/> {t.hw}</div>
+            <div className={s.row}>
+              <p>{t.hwDesc}</p>
+              <Switch checked={hwAccel} onChange={() => setHwAccel(!hwAccel)} />
+            </div>
+          </section>
+
+          {/* ОЧИСТКА */}
+          <section className={`${s.section} ${s.danger}`}>
+            <div className={s.secHeader}><Trash2 size={20} className={s.icon}/> {t.clear}</div>
+            <div className={s.row}>
+              <p>{t.clearDesc}</p>
+              <button className={s.clearBtn} onClick={() => alert("CACHE CLEARED")}>EXECUTE</button>
+            </div>
+          </section>
+
         </div>
-
-        {/* Блок 2: Данные */}
-        <div style={{ background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333' }}>
-          <h3 style={{ color: '#666', marginBottom: '20px', textTransform: 'uppercase', fontSize: '12px' }}>Data Management</h3>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-             <div>
-               <div style={{marginBottom: '5px'}}>Clear Cache</div>
-               <div style={{fontSize: '10px', color: '#555'}}>Resets local settings and stored keys</div>
-             </div>
-             <button onClick={handleClearCache} style={{background: '#333', border: 'none', color: 'white', padding: '8px 15px', cursor: 'pointer'}}>RESET</button>
-          </div>
-        </div>
-
-        {/* Блок 3: Аккаунт */}
-        <div style={{ background: '#111', padding: '30px', borderRadius: '10px', border: '1px solid #333' }}>
-           <h3 style={{ color: '#666', marginBottom: '20px', textTransform: 'uppercase', fontSize: '12px' }}>Session</h3>
-           <MagicButton onClick={handleSignOut} text="LOGOUT" />
-        </div>
-
-      </div>
-
-      <div style={{ marginTop: 'auto', color: '#333', fontSize: '10px' }}>
-        UID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
       </div>
     </div>
   );
 };
+
+// Компонент переключателя
+const Switch = ({ checked, onChange }) => (
+  <div className={`${s.switch} ${checked ? s.on : ''}`} onClick={onChange}>
+    <motion.div layout className={s.handle} />
+  </div>
+);
 
 export default Settings;

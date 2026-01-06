@@ -107,3 +107,20 @@ textarea { width: 100%; height: 100px; background: #111; border: none; color: #f
 .postBtn { background: #e11d48; color: #fff; border:none; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
 .cancel { background: transparent; color: #666; border:none; padding: 8px 15px; cursor: pointer; }
 .previewImg { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; }
+
+.modalHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+.commentsList { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+
+.commentRow { 
+  display: flex; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; 
+  img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+}
+.cContent { flex: 1; display: flex; flex-direction: column; span { font-size: 10px; font-weight: bold; color: #888; } p { margin: 2px 0 0; font-size: 12px; color: #ddd; } }
+
+.commentInput { 
+  display: flex; gap: 10px; 
+  input { flex: 1; background: #000; border: 1px solid #333; padding: 10px; color: #fff; border-radius: 8px; }
+  button { background: #e11d48; border: none; padding: 0 15px; border-radius: 8px; color: #fff; cursor: pointer; }
+}
+
+.delBtn { background: none; border: none; color: #444; cursor: pointer; &:hover { color: #e11d48; } }

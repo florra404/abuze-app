@@ -1,0 +1,75 @@
+.page {
+  height: 100vh; padding: 40px; display: flex; flex-direction: column; align-items: center;
+  color: #fff;
+}
+
+.backBtn {
+  align-self: flex-start; background: none; border: none; color: #aaa; 
+  display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold;
+  &:hover { color: #fff; }
+}
+
+.container {
+  width: 100%; max-width: 600px; margin-top: 20px;
+}
+
+.title {
+  font-size: 32px; font-weight: 900; letter-spacing: -1px; margin-bottom: 40px;
+  text-align: center; text-transform: uppercase;
+  background: linear-gradient(to right, #fff, #888);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.grid { display: flex; flex-direction: column; gap: 20px; }
+
+.section {
+  background: rgba(20, 20, 25, 0.6); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08); padding: 25px; border-radius: 16px;
+  transition: 0.2s;
+  
+  &:hover { border-color: rgba(255,255,255,0.2); }
+  &.danger { border-color: rgba(225, 29, 72, 0.3); }
+}
+
+.secHeader {
+  display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: bold; margin-bottom: 15px;
+  color: #eee;
+  .icon { color: #e11d48; }
+}
+
+.row {
+  display: flex; justify-content: space-between; align-items: center;
+  p { margin: 0; color: #888; font-size: 13px; }
+}
+
+/* Языковые кнопки */
+.langSwitcher {
+  display: flex; gap: 10px;
+}
+
+.langBtn {
+  flex: 1; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid #333;
+  color: #666; font-weight: bold; cursor: pointer; border-radius: 8px; transition: 0.2s;
+  
+  &:hover { color: #fff; border-color: #555; }
+  &.active { background: #e11d48; color: #fff; border-color: #e11d48; box-shadow: 0 0 15px rgba(225, 29, 72, 0.4); }
+}
+
+/* Переключатель (Switch) */
+.switch {
+  width: 50px; height: 26px; background: #333; border-radius: 50px; 
+  display: flex; align-items: center; padding: 3px; cursor: pointer; transition: 0.3s;
+  
+  &.on { background: #e11d48; justify-content: flex-end; }
+}
+
+.handle {
+  width: 20px; height: 20px; background: #fff; border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.clearBtn {
+  background: rgba(225, 29, 72, 0.1); border: 1px solid #e11d48; color: #e11d48;
+  padding: 5px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px;
+  &:hover { background: #e11d48; color: #fff; }
+}

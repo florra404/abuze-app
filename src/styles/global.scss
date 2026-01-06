@@ -42,3 +42,39 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* --- СВЕЧЕНИЕ АДМИНА --- */
+.admin-glow {
+  font-weight: 900;
+  color: #e11d48;
+  text-shadow: 
+    0 0 5px rgba(225, 29, 72, 0.8),
+    0 0 10px rgba(225, 29, 72, 0.5);
+  animation: pulseName 2s infinite alternate;
+}
+@keyframes pulseName {
+  from { text-shadow: 0 0 5px rgba(225, 29, 72, 0.5); }
+  to { text-shadow: 0 0 15px rgba(225, 29, 72, 1), 0 0 5px #fff; }
+}
+
+/* --- ЭФФЕКТ 100 УРОВНЯ (ENTITY GLITCH) --- */
+.frame-entity {
+  position: relative;
+  border-color: #ff003c !important;
+  box-shadow: 0 0 15px #ff003c;
+  animation: glitch-border 2s infinite;
+}
+
+.frame-entity::before {
+  content: "MAX";
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  background: #ff003c; color: #000; font-size: 8px; font-weight: bold; padding: 2px 5px;
+  clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+}
+
+@keyframes glitch-border {
+  0% { box-shadow: 0 0 15px #ff003c; border-color: #ff003c; }
+  50% { box-shadow: -5px 0 15px #00ffff; border-color: #00ffff; } /* Циан */
+  52% { box-shadow: 5px 0 15px #ff003c; border-color: #ff003c; }
+  100% { box-shadow: 0 0 15px #ff003c; border-color: #ff003c; }
+}
