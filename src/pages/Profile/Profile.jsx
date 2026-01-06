@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { getLevelInfo, getFrameClass } from '../../utils/levelSystem';
+import { getLevelInfo } from '../../utils/levelSystem';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ArrowLeft, LogOut, Shield, Gamepad2, Send, 
+  MessageSquare, User, Clock, Zap 
+} from 'lucide-react';
 import s from './Profile.module.scss';
 
 const Profile = () => {
@@ -12,9 +17,6 @@ const Profile = () => {
   
   // Социалка
   const [friends, setFriends] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Чат
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -25,20 +27,17 @@ const Profile = () => {
 
   useEffect(() => { init(); }, []);
 
-  // --- ЛОГИКА ЗАГРУЗКИ ---
+  // --- ЛОГИКА (ОСТАВЛЯЕМ КАК БЫЛО, ОНА РАБОТАЕТ) ---
   const init = async () => {
     try {
       setLoading(true);
-      
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) throw new Error("Auth error");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user");
       setUser(user);
 
-      // Профиль
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       setProfile(profileData);
 
-      // Друзья (Accepted)
       const { data: friendships } = await supabase
         .from('friend_requests')
         .select('*, sender:sender_id(*), receiver:receiver_id(*)')
@@ -46,50 +45,32 @@ const Profile = () => {
         .eq('status', 'accepted');
 
       if (friendships) {
-        const formattedFriends = friendships.map(f => f.sender_id === user.id ? f.receiver : f.sender);
-        setFriends(formattedFriends.filter(f => f !== null));
+        const formatted = friendships.map(f => f.sender_id === user.id ? f.receiver : f.sender);
+        setFriends(formatted.filter(Boolean));
       }
-
-    } catch (error) {
-      console.error("INIT ERROR:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  // --- ЧАТ (REALTIME) ---
+  // ЧАТ - Realtime
   useEffect(() => {
     if (!activeChat || !user) return;
-    
-    const channel = supabase
-      .channel('chat_room')
+    const channel = supabase.channel('chat_room')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const isRelated = (payload.new.sender_id === activeChat.id && payload.new.receiver_id === user.id) ||
                           (payload.new.sender_id === user.id && payload.new.receiver_id === activeChat.id);
-        
         if (isRelated) {
           setMessages(prev => {
-             // Защита от дублей (если сообщение уже добавлено оптимистично)
              if (prev.find(m => m.id === payload.new.id)) return prev;
-             // Если это мое сообщение, которое пришло с сервера - заменяем временное (по timestamp или контенту)
-             // Для простоты просто добавляем, React ключи разберет
              return [...prev, payload.new];
           });
           scrollToBottom();
         }
-      })
-      .subscribe();
-
+      }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [activeChat, user]);
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      chatScrollRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
+  const scrollToBottom = () => setTimeout(() => chatScrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
 
-  // --- ДЕЙСТВИЯ ---
   const openChat = async (friend) => {
     setActiveChat(friend);
     const { data } = await supabase.from('messages')
@@ -104,157 +85,186 @@ const Profile = () => {
     if (!newMessage.trim() || !activeChat) return;
     const text = newMessage;
     setNewMessage(''); 
-
-    // Оптимистичное обновление
-    setMessages(prev => [...prev, {
-      id: Date.now(), sender_id: user.id, receiver_id: activeChat.id, content: text, created_at: new Date().toISOString()
-    }]);
+    setMessages(prev => [...prev, { id: Date.now(), sender_id: user.id, receiver_id: activeChat.id, content: text }]);
     scrollToBottom();
-
-    await supabase.from('messages').insert({
-      sender_id: user.id, receiver_id: activeChat.id, content: text
-    });
+    await supabase.from('messages').insert({ sender_id: user.id, receiver_id: activeChat.id, content: text });
   };
 
   const handleAvatarUpdate = async (e) => {
     const file = e.target.files[0];
     if (!file || !profile) return;
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${profile.id}-${Date.now()}.${file.name.split('.').pop()}`;
       await supabase.storage.from('avatars').upload(fileName, file);
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id);
       setProfile({ ...profile, avatar_url: publicUrl });
-    } catch (error) { alert("Upload failed"); }
+    } catch (e) { alert("Upload failed"); }
   };
 
   const linkSteam = async () => {
     if (!steamIdInput) return;
-    // Просто сохраняем ID, так как функцию мы еще не деплоили или она сложная
-    // Если функция get-steam-stats работает - раскомментируй вызов функции
     await supabase.from('profiles').update({ steam_id: steamIdInput }).eq('id', user.id);
     setProfile({ ...profile, steam_id: steamIdInput });
-    alert("STEAM ID LINKED");
   };
 
-  // --- РЕНДЕРИНГ ---
+  // --- RENDER ---
   const { level, progressPercent } = profile ? getLevelInfo(profile.xp || 0) : { level: 1, progressPercent: 0 };
-  const frameClass = getFrameClass(level);
 
-  if (loading) return <div className={s.loading}><div className={s.loader}></div>INITIALIZING...</div>;
-  if (!profile) return <div className={s.loading}>DATA CORRUPTED. RESTART APP.</div>;
+  if (loading) return <div className={s.loading}>INITIALIZING...</div>;
 
   return (
-    <div className={s.container}>
-      <button className={s.backBtn} onClick={() => navigate('/')}>← MAIN MENU</button>
+    <div className={s.page}>
+      {/* ФОН */}
+      <div className="entity-fog"><div className="fog-layer"></div></div>
 
-      <div className={s.content}>
+      {/* НАВИГАЦИЯ */}
+      <motion.button 
+        whileHover={{ x: -5 }} 
+        className={s.backBtn} 
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft /> BACK TO HUB
+      </motion.button>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className={s.content}
+      >
         
-        {/* ЛЕВАЯ ПАНЕЛЬ: ID CARD */}
+        {/* ЛЕВАЯ ПАНЕЛЬ: ДОСЬЕ */}
         <div className={s.leftPanel}>
-          <div className={`${s.idCard} ${s[frameClass]}`}>
-            <div className={s.cardHeader}>OPERATIVE ID // {profile.id.slice(0,8)}</div>
+          <div className={s.idCard}>
+            <div className={s.cardHeader}>
+              <Shield size={14} /> OPERATIVE DOSSIER
+            </div>
             
+            {/* Аватар */}
             <div className={s.avatarSection}>
-              <div className={s.avatarContainer}>
-                 <img src={profile.avatar_url || 'https://via.placeholder.com/150'} className={s.avatarImg} alt=""/>
-                 {/* Скрытый инпут поверх картинки */}
-                 <input type="file" className={s.hiddenInput} onChange={handleAvatarUpdate} title="Change Avatar" />
-                 <div className={s.uploadOverlay}>UPLOAD</div>
-              </div>
-              <div className={s.lvlCircle}>{level}</div>
+              <motion.div whileHover={{ scale: 1.05 }} className={s.avatarWrapper}>
+                <img src={profile.avatar_url || 'https://via.placeholder.com/150'} alt="" />
+                <input type="file" onChange={handleAvatarUpdate} title="Upload New Avatar" />
+                <div className={s.roleBadge} data-role={profile.role}>{profile.role || 'AGENT'}</div>
+              </motion.div>
             </div>
 
-            <h2 className={s.userName}>{profile.username}</h2>
+            <h2 className={s.username}>{profile.username}</h2>
             
+            {/* Статистика */}
             <div className={s.statsGrid}>
               <div className={s.statBox}>
-                <label>XP</label> <span>{profile.xp || 0}</span>
+                <div className={s.statLabel}><Zap size={10}/> LEVEL</div>
+                <div className={s.statVal}>{level}</div>
               </div>
               <div className={s.statBox}>
-                <label>HOURS</label> <span>{profile.dbd_hours || 0}</span>
+                <div className={s.statLabel}><Clock size={10}/> HOURS</div>
+                <div className={s.statVal}>{profile.dbd_hours || 0}</div>
               </div>
             </div>
 
-            <div className={s.xpTrack}>
-              <div className={s.xpFill} style={{width: `${progressPercent}%`}}></div>
+            {/* Прогресс XP */}
+            <div className={s.xpSection}>
+              <div className={s.xpHeader}>
+                <span>XP PROGRESS</span>
+                <span>{profile.xp} XP</span>
+              </div>
+              <div className={s.xpTrack}>
+                <motion.div 
+                  initial={{ width: 0 }} 
+                  animate={{ width: `${progressPercent}%` }} 
+                  className={s.xpFill} 
+                />
+              </div>
             </div>
 
             {/* Steam Link */}
-            <div className={s.steamSection}>
+            <div className={s.steamBlock}>
               {profile.steam_id ? (
-                <div className={s.steamActive}>STEAM LINKED: {profile.steam_id}</div>
+                <div className={s.steamActive}>
+                  <Gamepad2 size={16} /> STEAM LINKED
+                  <span className={s.sid}>{profile.steam_id}</span>
+                </div>
               ) : (
                 <div className={s.steamForm}>
-                  <input placeholder="STEAM ID64..." value={steamIdInput} onChange={e => setSteamIdInput(e.target.value)} />
+                  <input placeholder="Steam ID64" value={steamIdInput} onChange={e => setSteamIdInput(e.target.value)} />
                   <button onClick={linkSteam}>LINK</button>
                 </div>
               )}
             </div>
 
-            <button className={s.logoutBtn} onClick={() => supabase.auth.signOut().then(() => navigate('/'))}>TERMINATE SESSION</button>
+            <button className={s.logoutBtn} onClick={() => supabase.auth.signOut().then(() => navigate('/'))}>
+              <LogOut size={16} /> TERMINATE SESSION
+            </button>
           </div>
         </div>
 
-        {/* ПРАВАЯ ПАНЕЛЬ: КОММУНИКАТОР */}
+        {/* ПРАВАЯ ПАНЕЛЬ: СЕКРЕТНЫЙ ЧАТ */}
         <div className={s.rightPanel}>
-          
-          {/* СПИСОК ДРУЗЕЙ (СВЕРХУ) */}
-          <div className={s.friendsBar}>
-            <div className={s.searchWrap}>
-              <span style={{opacity:0.5}}>🔍</span>
-              {/* Логику поиска друзей можно добавить сюда позже, пока просто заглушка */}
-              <input placeholder="SEARCH AGENT..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            </div>
+          <div className={s.chatInterface}>
             
-            <div className={s.friendsScroll}>
-               {friends.length === 0 && <div style={{fontSize:'10px', color:'#666', padding:'10px'}}>NO CONNECTIONS</div>}
-               {friends.map(f => (
-                 <div key={f.id} className={`${s.friendBubble} ${activeChat?.id === f.id ? s.active : ''}`} onClick={() => openChat(f)} title={f.username}>
-                   <img src={f.avatar_url || 'https://via.placeholder.com/50'} alt=""/>
-                   <div className={s.statusDot}></div>
-                 </div>
-               ))}
+            {/* Верх: Друзья */}
+            <div className={s.friendsBar}>
+              {friends.length === 0 && <span className={s.noFriends}>No active agents found.</span>}
+              {friends.map(f => (
+                <motion.div 
+                  key={f.id}
+                  whileHover={{ scale: 1.1, borderColor: '#e11d48' }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`${s.friendBubble} ${activeChat?.id === f.id ? s.activeBubble : ''}`}
+                  onClick={() => openChat(f)}
+                  title={f.username}
+                >
+                  <img src={f.avatar_url} alt="" />
+                  <div className={s.statusDot} />
+                </motion.div>
+              ))}
             </div>
-          </div>
 
-          {/* ОКНО ЧАТА */}
-          <div className={s.chatContainer}>
-            {activeChat ? (
-              <>
-                 <div className={s.chatHeader}>
-                    SECURE CONNECTION: <span className={s.red}>{activeChat.username}</span>
-                 </div>
-                 <div className={s.msgList}>
-                    {messages.map((m, i) => (
-                      <div key={i} className={`${s.msg} ${m.sender_id === user.id ? s.mine : s.theirs}`}>
-                        {m.content}
-                      </div>
-                    ))}
+            {/* Центр: Сообщения */}
+            <div className={s.chatArea}>
+              {activeChat ? (
+                <>
+                  <div className={s.chatHeader}>
+                     SECURE CONNECTION: <span className={s.accent}>{activeChat.username}</span>
+                  </div>
+                  <div className={s.messagesList}>
+                    <AnimatePresence>
+                      {messages.map((m) => (
+                        <motion.div 
+                          key={m.id} 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`${s.msg} ${m.sender_id === user.id ? s.mine : s.theirs}`}
+                        >
+                          {m.content}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                     <div ref={chatScrollRef} />
-                 </div>
-                 <div className={s.inputArea}>
+                  </div>
+                  <div className={s.inputZone}>
                     <input 
                       value={newMessage} 
-                      onChange={e => setNewMessage(e.target.value)} 
+                      onChange={e => setNewMessage(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                      placeholder="TRANSMIT MESSAGE..." 
+                      placeholder="Type encrypted message..." 
                     />
-                    <button onClick={sendMessage}>SEND</button>
-                 </div>
-              </>
-            ) : (
-              <div className={s.emptyState}>
-                <div className={s.emptyIcon}>📡</div>
-                <div>SELECT FREQUENCY TO BEGIN TRANSMISSION</div>
-              </div>
-            )}
+                    <button onClick={sendMessage}><Send size={18} /></button>
+                  </div>
+                </>
+              ) : (
+                <div className={s.emptyState}>
+                  <MessageSquare size={48} opacity={0.2} />
+                  <p>SELECT AGENT FREQUENCY</p>
+                </div>
+              )}
+            </div>
+
           </div>
-          
         </div>
 
-      </div>
+      </motion.div>
     </div>
   );
 };

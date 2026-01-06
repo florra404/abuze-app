@@ -1,144 +1,205 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
-import { motion } from 'framer-motion'; // АНИМАЦИИ
-import { Users, Newspaper, Zap, Search, ShieldAlert } from 'lucide-react'; // ИКОНКИ
-import s from './Home.module.scss'; // Сейчас создадим
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Heart, MessageCircle, Share2, Plus, Zap, 
+  BadgeCheck, Image as ImageIcon, Send 
+} from 'lucide-react';
+import s from './Home.module.scss';
 
-const VERSION = "v2.2.0 // COMMUNITY HUB";
+const VERSION = "v3.0.0 // SOCIAL";
 
 const Home = () => {
   const navigate = useNavigate();
-  const [betas, setBetas] = useState([]);
   const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Создание поста
+  const [isCreating, setIsCreating] = useState(false);
+  const [newContent, setNewContent] = useState('');
+  const [newImage, setNewImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
-      // Грузим Бета-тестеров и Админов
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['admin', 'beta'])
-        .order('xp', { ascending: false });
-      setBetas(data || []);
-    };
-    load();
+    fetchFeed();
+    // Realtime подписка на новые посты
+    const channel = supabase.channel('feed_realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+        // Подгружаем полный пост с автором
+        fetchSinglePost(payload.new.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Анимация появления
-  const containerVars = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  const fetchFeed = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+
+    const { data, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles(*),
+        likes(user_id),
+        comments(count)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (data) setPosts(data);
+    setLoading(false);
   };
-  
-  const itemVars = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
+
+  const fetchSinglePost = async (id) => {
+    const { data } = await supabase.from('posts').select('*, author:profiles(*), likes(user_id), comments(count)').eq('id', id).single();
+    if(data) setPosts(prev => [data, ...prev]);
+  };
+
+  // --- ЛОГИКА ---
+  const handleLike = async (postId) => {
+    const postIndex = posts.findIndex(p => p.id === postId);
+    const post = posts[postIndex];
+    const isLiked = post.likes.some(l => l.user_id === user.id);
+
+    // Оптимистичное обновление UI
+    const updatedPosts = [...posts];
+    if (isLiked) {
+      updatedPosts[postIndex].likes = post.likes.filter(l => l.user_id !== user.id);
+      await supabase.from('likes').delete().match({ user_id: user.id, post_id: postId });
+    } else {
+      updatedPosts[postIndex].likes.push({ user_id: user.id });
+      // Даем XP за лайк
+      await supabase.rpc('increment_xp', { amount: 2, user_id: user.id }); // Если функции нет, пропустит
+      await supabase.from('likes').insert({ user_id: user.id, post_id: postId });
+    }
+    setPosts(updatedPosts);
+  };
+
+  const createPost = async () => {
+    if (!newContent && !newImage) return;
+    setLoading(true);
+
+    let imageUrl = null;
+    if (newImage) {
+      const fileName = `${user.id}-${Date.now()}`;
+      await supabase.storage.from('feed').upload(fileName, newImage);
+      const { data } = supabase.storage.from('feed').getPublicUrl(fileName);
+      imageUrl = data.publicUrl;
+    }
+
+    await supabase.from('posts').insert({
+      user_id: user.id,
+      content: newContent,
+      image_url: imageUrl
+    });
+
+    // Начисляем XP за пост (+50)
+    // В идеале делать через RPC, но сделаем через апдейт для простоты
+    const { data: profile } = await supabase.from('profiles').select('xp').eq('id', user.id).single();
+    await supabase.from('profiles').update({ xp: (profile.xp || 0) + 50 }).eq('id', user.id);
+
+    setIsCreating(false);
+    setNewContent('');
+    setNewImage(null);
+    setLoading(false);
   };
 
   return (
     <div className={s.page}>
-      {/* ФОНОВЫЙ ШУМ */}
       <div className="entity-fog"><div className="fog-layer"></div></div>
 
-      {/* ШАПКА */}
-      <motion.header 
-        initial={{ y: -50, opacity: 0 }} 
-        animate={{ y: 0, opacity: 1 }} 
-        className={s.header}
-      >
-        <div className={s.brand}>
-          <h1>ABUZE<span className={s.accent}>.HUB</span></h1>
-          <span className={s.badge}>{VERSION}</span>
-        </div>
+      {/* HEADER */}
+      <header className={s.header}>
+        <div className={s.logo}>ABUZE<span className={s.accent}>.NET</span></div>
         
-        {/* КНОПКА ПРОФИЛЯ (Справа) */}
-        <div className={s.profileWidget} onClick={() => navigate('/profile')}>
-           <div className={s.pInfo}>
-             <span className={s.pName}>{user?.email?.split('@')[0]}</span>
-             <span className={s.pRole}>{betas.find(u => u.id === user?.id)?.role || 'OPERATIVE'}</span>
-           </div>
-           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" className={s.pAva} alt=""/>
+        {/* Кнопка Рандомайзера (Спрятана) */}
+        <div className={s.miniNav}>
+           <motion.button whileHover={{scale:1.1}} className={s.iconBtn} onClick={() => navigate('/randomizer')} title="Randomizer">
+             <Zap size={20} />
+           </motion.button>
+           <motion.button whileHover={{scale:1.1}} className={s.iconBtn} onClick={() => navigate('/profile')} title="Profile">
+             <img src={posts.find(p=>p.user_id===user?.id)?.author?.avatar_url || 'https://via.placeholder.com/30'} className={s.miniAva} alt=""/>
+           </motion.button>
         </div>
-      </motion.header>
+      </header>
 
-      <motion.main 
-        variants={containerVars} 
-        initial="hidden" 
-        animate="visible"
-        className={s.grid}
-      >
-        
-        {/* ЛЕВАЯ КОЛОНКА: НОВОСТИ */}
-        <div className={s.colLeft}>
-          <motion.div variants={itemVars} className={s.newsCard}>
-            <div className={s.cardHead}><Newspaper size={18} /> LATEST INTEL</div>
-            <div className={s.newsItem}>
-              <h3>Community Update Released</h3>
-              <p className={s.date}>Jan 06, 2026</p>
-              <p>We are shifting focus. The Randomizer is now just one tool in our arsenal. Welcome to the <b>Community Hub</b>.</p>
-              <ul>
-                <li>🔥 <b>Global Search:</b> Fixed visibility issues. Find any operative.</li>
-                <li>💎 <b>Beta Program:</b> Verified testers now have special badges.</li>
-                <li>🎨 <b>Visuals:</b> "Entity Fog" engine activated.</li>
-              </ul>
+      {/* CREATE POST BAR */}
+      <div className={s.createBar} onClick={() => setIsCreating(true)}>
+        <Plus size={20} className={s.accent}/>
+        <span>Share your latest kill...</span>
+      </div>
+
+      {/* MODAL CREATE */}
+      <AnimatePresence>
+        {isCreating && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className={s.modalOverlay}>
+            <div className={s.modal}>
+              <h3>NEW TRANSMISSION</h3>
+              <textarea placeholder="Write caption..." value={newContent} onChange={e=>setNewContent(e.target.value)}/>
+              
+              {newImage && <img src={URL.createObjectURL(newImage)} className={s.previewImg} alt=""/>}
+              
+              <div className={s.modalActions}>
+                <button onClick={() => fileInputRef.current.click()}><ImageIcon size={20}/></button>
+                <input type="file" ref={fileInputRef} hidden onChange={e=>setNewImage(e.target.files[0])}/>
+                
+                <div style={{flex:1}}></div>
+                <button onClick={()=>setIsCreating(false)} className={s.cancel}>CANCEL</button>
+                <button onClick={createPost} className={s.postBtn}>PUBLISH (+50 XP)</button>
+              </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* МЕНЮ НАВИГАЦИИ */}
-          <div className={s.navGrid}>
-            <MenuCard title="Randomizer" icon={<Zap />} onClick={() => navigate('/randomizer')} desc="Create Chaos" />
-            <MenuCard title="Community" icon={<Users />} onClick={() => alert('Coming Soon: Global Feed')} desc="Clips & Art (WIP)" active={false} />
-            <MenuCard title="Find Agents" icon={<Search />} onClick={() => navigate('/profile')} desc="Search Friends" />
-          </div>
-        </div>
+      {/* FEED */}
+      <div className={s.feed}>
+        {posts.map(post => {
+           const isLiked = post.likes?.some(l => l.user_id === user?.id);
+           return (
+             <motion.div 
+               initial={{y:20, opacity:0}} animate={{y:0, opacity:1}} 
+               key={post.id} className={s.postCard}
+             >
+               {/* Author Header */}
+               <div className={s.postHeader}>
+                 <img src={post.author?.avatar_url} className={s.postAva} alt=""/>
+                 <div className={s.postMeta}>
+                   <div className={s.authorName}>
+                     {post.author?.username}
+                     {post.author?.is_verified && <BadgeCheck size={14} className={s.verifyBadge} />}
+                   </div>
+                   <div className={s.postTime}>{new Date(post.created_at).toLocaleDateString()}</div>
+                 </div>
+               </div>
 
-        {/* ПРАВАЯ КОЛОНКА: BETA SQUAD (БЕТА ТЕСТЕРЫ) */}
-        <motion.div variants={itemVars} className={s.betaSection}>
-          <div className={s.sectionHeader}>
-            <ShieldAlert size={18} className={s.accent} />
-            <span>ELITE SQUAD / BETA TESTERS</span>
-          </div>
-          
-          <div className={s.betaList}>
-            {betas.map(b => (
-              <div key={b.id} className={s.betaRow}>
-                <img src={b.avatar_url || 'https://via.placeholder.com/40'} alt="" />
-                <div className={s.betaInfo}>
-                  <div className={s.bName}>{b.username}</div>
-                  <div className={s.bRole} style={{color: b.role === 'admin' ? '#e11d48' : '#3b82f6'}}>
-                    {b.role.toUpperCase()}
-                  </div>
-                </div>
-                <div className={s.bLvl}>{Math.floor(Math.sqrt(b.xp/100)) + 1} LVL</div>
-              </div>
-            ))}
-            {betas.length === 0 && <div className={s.empty}>Scanning for testers...</div>}
-          </div>
-        </motion.div>
+               {/* Content */}
+               <div className={s.postContent}>{post.content}</div>
+               {post.image_url && <img src={post.image_url} className={s.postImage} alt=""/>}
 
-      </motion.main>
+               {/* Actions */}
+               <div className={s.postActions}>
+                 <button className={`${s.actBtn} ${isLiked ? s.liked : ''}`} onClick={() => handleLike(post.id)}>
+                   <Heart size={20} fill={isLiked ? "#e11d48" : "none"} /> 
+                   <span>{post.likes?.length || 0}</span>
+                 </button>
+                 <button className={s.actBtn}>
+                   <MessageCircle size={20} />
+                   <span>{post.comments?.[0]?.count || 0}</span>
+                 </button>
+                 <button className={s.actBtn} style={{marginLeft:'auto'}}>
+                   <Share2 size={20} />
+                 </button>
+               </div>
+             </motion.div>
+           );
+        })}
+        {posts.length === 0 && <div className={s.empty}>NO TRANSMISSIONS YET</div>}
+      </div>
     </div>
   );
 };
-
-// Компонент Карточки Меню
-const MenuCard = ({ title, icon, desc, onClick, active = true }) => (
-  <motion.div 
-    whileHover={active ? { scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' } : {}}
-    whileTap={active ? { scale: 0.98 } : {}}
-    onClick={onClick}
-    className={`${s.menuCard} ${!active ? s.locked : ''}`}
-  >
-    <div className={s.iconBox}>{icon}</div>
-    <div>
-      <div className={s.mTitle}>{title}</div>
-      <div className={s.mDesc}>{desc}</div>
-    </div>
-  </motion.div>
-);
 
 export default Home;
